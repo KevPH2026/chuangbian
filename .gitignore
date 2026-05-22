@@ -1,0 +1,10 @@
+.vercel
+.env
+.env*.local
+dist
+node_modules
+artifacts
+chuangbian-simple-ui*.png
+.DS_Store
+*.log
+coverage
