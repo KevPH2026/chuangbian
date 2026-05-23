@@ -309,7 +309,7 @@ function App() {
           userName: displayName,
           userEmail: profileEmail.trim(),
           avatarImage: isAvatarRole ? avatarImage : "",
-          size: "256x256",
+          size: "1024x1024",
           quality: "low"
         })
       });
@@ -1518,7 +1518,7 @@ function createModelDraft(config = {}) {
     model: config.model || "openai/gpt-5.4-image-2",
     presetId: config.presetId || "tokenrouter-gpt-image-2",
     quality: config.quality || "low",
-    size: config.size || "256x256"
+    size: config.size || "1024x1024"
   };
 }
 
