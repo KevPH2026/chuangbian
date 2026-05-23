@@ -267,16 +267,43 @@ function imageApiPlugin(env) {
             referenceImage: hasAvatar ? avatarImage : ""
           });
 
-          const item = await saveGeneratedImage({ image, model: runtimeModel.model, meta, prompt, combo, creatorId: effectiveCreatorId, creatorName, creatorEmailHash });
+          let item;
+          let storageWarning = "";
+          try {
+            item = await saveGeneratedImage({ image, model: runtimeModel.model, meta, prompt, combo, creatorId: effectiveCreatorId, creatorName, creatorEmailHash });
+          } catch (storageError) {
+            if (!isSuspendedStorageError(storageError)) {
+              throw storageError;
+            }
+            storageWarning = "图库存储暂时被暂停，本次先直接返回图片。";
+            item = {
+              id: combo.comboKey,
+              comboKey: combo.comboKey,
+              caption: combo.caption,
+              role: meta.role,
+              roleName: meta.roleName,
+              action: meta.action,
+              actionName: meta.actionName,
+              category: getCategoryForMeta(meta),
+              categoryName: getCategoryName(getCategoryForMeta(meta)),
+              creatorId: effectiveCreatorId,
+              creatorName,
+              imageUrl: image,
+              downloadUrl: image,
+              thumbnail: image,
+              uses: 1
+            };
+          }
           const category = getCategoryForMeta(meta);
-          const quota = await consumeQuota(quotaInput);
+          const quota = await consumeQuota(quotaInput).catch(() => quotaPreview);
           sendJson(res, 200, {
             image: item.imageUrl,
             cached: false,
             comboKey: item.comboKey,
             item: toPublicGalleryItem(item, effectiveCreatorId),
             meta: { ...meta, category, categoryName: getCategoryName(category) },
-            quota
+            quota,
+            warning: storageWarning
           });
         } catch (error) {
           server.config.logger.error(error);
@@ -343,6 +370,10 @@ function getViewerId(url) {
   } catch {
     return "";
   }
+}
+
+function isSuspendedStorageError(error) {
+  return /suspended|store is blocked|forbidden/i.test(String(error?.message || error || ""));
 }
 
 export default defineConfig(({ mode }) => {
