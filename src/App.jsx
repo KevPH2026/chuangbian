@@ -56,6 +56,21 @@ const examplePool = [
 ];
 
 const exampleCount = 6;
+const localGalleryKey = "chuangbian-local-gallery";
+const localGalleryLimit = 18;
+
+const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
+const galleryCategoryLabels = {
+  all: "全部",
+  ai: "AI",
+  default: "认命",
+  love: "恋爱",
+  money: "穷鬼",
+  "opossum-original": "原图负鼠",
+  question: "疑惑",
+  recovery: "大家的窗边",
+  work: "打工"
+};
 
 const moods = [
   { id: "question", name: "扭头疑惑", detail: "身子不动，只把头拧回来", test: isQuestionLike },
@@ -330,6 +345,24 @@ function App() {
       setCopyStatus("idle");
       setShareStatus("idle");
       setStatus("done");
+      if (data.item) {
+        const localItem = rememberLocalGalleryItem({
+          ...data.item,
+          creatorName: data.item.creatorName || displayName,
+          downloadUrl: data.item.downloadUrl || data.image,
+          imageUrl: data.item.imageUrl || data.image,
+          thumbnail: data.item.thumbnail || data.image
+        });
+        if (localItem) {
+          setGallery((current) => {
+            const nextGallery = mergeGalleryItems([localItem], current);
+            setGalleryCategories(getClientGalleryCategories(nextGallery));
+            return nextGallery;
+          });
+          setGalleryStatus("done");
+          setActiveCategory("all");
+        }
+      }
       if (data.comboKey && !data.cached) {
         publishThumbnail(data.comboKey, data.image);
       } else {
@@ -479,10 +512,11 @@ function App() {
         throw new Error(data.error || "加载失败");
       }
 
-      setGallery(Array.isArray(data.items) ? data.items : []);
-      setGalleryCategories(Array.isArray(data.categories) ? data.categories : [{ id: "all", name: "全部", count: 0 }]);
+      const nextGallery = mergeGalleryItems(readLocalGalleryItems(), Array.isArray(data.items) ? data.items : []);
+      setGallery(nextGallery);
+      setGalleryCategories(getClientGalleryCategories(nextGallery, data.categories));
       setGalleryStatus("done");
-      if (activeCategory !== "all" && !data.categories?.some((category) => category.id === activeCategory)) {
+      if (activeCategory !== "all" && !getClientGalleryCategories(nextGallery, data.categories).some((category) => category.id === activeCategory)) {
         setActiveCategory("all");
       }
     } catch {
@@ -519,8 +553,9 @@ function App() {
       });
       const data = await response.json();
       if (response.ok) {
-        setGallery(Array.isArray(data.items) ? data.items : []);
-        setGalleryCategories(Array.isArray(data.categories) ? data.categories : [{ id: "all", name: "全部", count: 0 }]);
+        const nextGallery = mergeGalleryItems(readLocalGalleryItems(), Array.isArray(data.items) ? data.items : []);
+        setGallery(nextGallery);
+        setGalleryCategories(getClientGalleryCategories(nextGallery, data.categories));
         setGalleryStatus("done");
       }
     } catch {
@@ -1514,6 +1549,114 @@ function readLocalValue(key) {
   } catch {
     return "";
   }
+}
+
+function readLocalGalleryItems() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(localGalleryKey) || "[]");
+    return Array.isArray(parsed) ? parsed.map(normalizeGalleryItem).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalGalleryItems(items) {
+  try {
+    window.localStorage.setItem(localGalleryKey, JSON.stringify(items.slice(0, localGalleryLimit)));
+  } catch {
+    // If localStorage is full, keep the current page state and let the next refresh use server data.
+  }
+}
+
+function rememberLocalGalleryItem(item) {
+  const nextItem = normalizeGalleryItem({
+    ...item,
+    createdAt: item?.createdAt || new Date().toISOString(),
+    localOnly: Boolean(item?.imageUrl?.startsWith?.("data:image/"))
+  });
+  if (!nextItem) {
+    return null;
+  }
+
+  const nextItems = mergeGalleryItems([nextItem], readLocalGalleryItems()).slice(0, localGalleryLimit);
+  writeLocalGalleryItems(nextItems);
+  return nextItem;
+}
+
+function normalizeGalleryItem(item) {
+  if (!item) {
+    return null;
+  }
+
+  const comboKey = String(item.comboKey || item.id || `local_${Date.now()}`).trim();
+  const imageUrl = String(item.imageUrl || item.image || item.thumbnail || "").trim();
+  if (!comboKey || !imageUrl) {
+    return null;
+  }
+
+  const category = String(item.category || item.action || "default");
+  return {
+    ...item,
+    id: String(item.id || comboKey),
+    comboKey,
+    caption: String(item.caption || "窗边时刻"),
+    category,
+    categoryName: item.categoryName || galleryCategoryLabels[category] || item.actionName || "窗边",
+    creatorName: item.creatorName || "无名受害者",
+    downloadUrl: item.downloadUrl || imageUrl,
+    imageUrl,
+    lastUsedAt: item.lastUsedAt || item.createdAt || new Date().toISOString(),
+    roleName: item.roleName || "路过角色",
+    thumbnail: item.thumbnail || imageUrl,
+    uses: Number(item.uses || 1)
+  };
+}
+
+function mergeGalleryItems(...groups) {
+  const byKey = new Map();
+  for (const group of groups) {
+    for (const rawItem of Array.isArray(group) ? group : []) {
+      const item = normalizeGalleryItem(rawItem);
+      if (!item) {
+        continue;
+      }
+
+      const existing = byKey.get(item.comboKey);
+      byKey.set(item.comboKey, {
+        ...existing,
+        ...item,
+        thumbnail: item.thumbnail || existing?.thumbnail,
+        imageUrl: item.imageUrl || existing?.imageUrl,
+        downloadUrl: item.downloadUrl || existing?.downloadUrl
+      });
+    }
+  }
+
+  return [...byKey.values()].sort((left, right) => {
+    const leftTime = new Date(left.lastUsedAt || left.createdAt || 0).getTime();
+    const rightTime = new Date(right.lastUsedAt || right.createdAt || 0).getTime();
+    return rightTime - leftTime;
+  });
+}
+
+function getClientGalleryCategories(items, fallbackCategories = []) {
+  const fallbackMap = new Map(
+    (Array.isArray(fallbackCategories) ? fallbackCategories : []).map((category) => [category.id, category.name])
+  );
+  const counts = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    if (item?.category) {
+      counts.set(item.category, (counts.get(item.category) || 0) + 1);
+    }
+  }
+
+  return galleryCategoryOrder
+    .filter((id) => id === "all" || counts.has(id))
+    .map((id) => ({
+      id,
+      name: galleryCategoryLabels[id] || fallbackMap.get(id) || id,
+      count: id === "all" ? (Array.isArray(items) ? items.length : 0) : counts.get(id) || 0
+    }));
 }
 
 function createModelDraft(config = {}) {

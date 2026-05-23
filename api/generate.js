@@ -1,6 +1,7 @@
 import { buildChuangbianPrompt, normalizeCaption } from "../lib/chuangbianPrompt.js";
 import {
   buildCombo,
+  compressImageForMemeDataUrl,
   findGalleryItem,
   getCategoryForMeta,
   getCategoryName,
@@ -119,6 +120,7 @@ export default async function handler(req, res) {
         throw storageError;
       }
       storageWarning = "图库存储暂时被暂停，本次先直接返回图片。";
+      const fallbackImage = await compressImageForMemeDataUrl(image).catch(() => image);
       item = {
         id: combo.comboKey,
         comboKey: combo.comboKey,
@@ -131,9 +133,9 @@ export default async function handler(req, res) {
         categoryName: getCategoryName(getCategoryForMeta(meta)),
         creatorId: effectiveCreatorId,
         creatorName,
-        imageUrl: image,
-        downloadUrl: image,
-        thumbnail: image,
+        imageUrl: fallbackImage,
+        downloadUrl: fallbackImage,
+        thumbnail: fallbackImage,
         uses: 1
       };
     }
