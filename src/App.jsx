@@ -231,7 +231,6 @@ function App() {
   const [wishText, setWishText] = useState("");
   const [wishes, setWishes] = useState([]);
   const [wishWallStatus, setWishWallStatus] = useState("loading");
-  const [wishWallError, setWishWallError] = useState("");
   const [wishVoteId, setWishVoteId] = useState("");
   const [quota, setQuota] = useState(null);
   const [gallery, setGallery] = useState([]);
@@ -239,7 +238,6 @@ function App() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [galleryCopyId, setGalleryCopyId] = useState("");
   const [galleryStatus, setGalleryStatus] = useState("loading");
-  const [galleryError, setGalleryError] = useState("");
   const [error, setError] = useState("");
 
   const selectedRole = roles.find((item) => item.id === role) || roles[1];
@@ -475,7 +473,6 @@ function App() {
 
   async function loadGallery() {
     try {
-      setGalleryError("");
       const response = await fetch(`/api/gallery?viewerId=${encodeURIComponent(viewerId)}`);
       const data = await response.json();
       if (!response.ok) {
@@ -488,15 +485,13 @@ function App() {
       if (activeCategory !== "all" && !data.categories?.some((category) => category.id === activeCategory)) {
         setActiveCategory("all");
       }
-    } catch (err) {
+    } catch {
       setGalleryStatus("error");
-      setGalleryError(err instanceof Error ? err.message : "图库加载失败，窗边库存暂时打不开。");
     }
   }
 
   async function loadWishWall() {
     try {
-      setWishWallError("");
       const response = await fetch("/api/wishes");
       const data = await response.json();
       if (!response.ok) {
@@ -505,9 +500,8 @@ function App() {
 
       setWishes(Array.isArray(data.items) ? data.items : []);
       setWishWallStatus("done");
-    } catch (err) {
+    } catch {
       setWishWallStatus("error");
-      setWishWallError(err instanceof Error ? err.message : "许愿墙加载失败，愿望暂时被风吹走了。");
     }
   }
 
@@ -1036,7 +1030,7 @@ function App() {
           </div>
         ) : (
           <div className="gallery-empty">
-            {galleryStatus === "loading" ? "正在看窗边有没有人..." : galleryStatus === "error" ? galleryError : "还没有访客留下窗边。"}
+            {galleryStatus === "loading" ? "正在看窗边有没有人..." : "还没有访客留下窗边。"}
           </div>
         )}
       </section>
@@ -1073,9 +1067,7 @@ function App() {
             ))}
           </div>
         ) : (
-          <div className="wish-wall-empty">
-            {wishWallStatus === "loading" ? "正在把愿望从窗边捞上来..." : wishWallStatus === "error" ? wishWallError : "空的。可以许愿，但别太正常。"}
-          </div>
+          <div className="wish-wall-empty">{wishWallStatus === "loading" ? "正在把愿望从窗边捞上来..." : "空的。可以许愿，但别太正常。"}</div>
         )}
       </section>
 
