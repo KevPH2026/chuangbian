@@ -17,6 +17,7 @@ import {
   updateGalleryThumbnail
 } from "./lib/galleryStore.js";
 import { generateImage } from "./lib/imageProvider.js";
+import { generateFallbackMeme } from "./lib/fallbackMeme.js";
 import { getRuntimeModelConfig, saveModelConfig } from "./lib/modelConfigStore.js";
 import { saveUserProfileUpload } from "./lib/profileStore.js";
 import {
@@ -252,31 +253,49 @@ function imageApiPlugin(env) {
             requestedQuality: body.quality || "",
             requestedSize: body.size || ""
           });
-          if (!runtimeModel.apiKey) {
-            sendJson(res, 500, { error: "生图模型 Key 还没配置。可以在后台模型配置里填 Key，或在本地环境变量里设置 OPENAI_API_KEY。" });
-            return;
+          let image;
+          let generationFallback = false;
+          let generationWarning = "";
+          try {
+            if (!runtimeModel.apiKey) {
+              throw new Error("生图模型 Key 还没配置，先用应急窗边模板顶一下。");
+            }
+            image = await generateImage({
+              apiKey: runtimeModel.apiKey,
+              baseURL: runtimeModel.baseURL,
+              model: runtimeModel.model,
+              prompt,
+              size: runtimeModel.size,
+              quality: runtimeModel.quality,
+              referenceImage: hasAvatar ? avatarImage : ""
+            });
+          } catch (generationError) {
+            generationFallback = true;
+            generationWarning = "AI 生图暂时抽风，已切到应急窗边模板。";
+            image = await generateFallbackMeme({ meta });
           }
 
-          const image = await generateImage({
-            apiKey: runtimeModel.apiKey,
-            baseURL: runtimeModel.baseURL,
-            model: runtimeModel.model,
+          const item = await saveGeneratedImage({
+            image,
+            model: generationFallback ? `${runtimeModel.model || "image-api"}:fallback` : runtimeModel.model,
+            meta,
             prompt,
-            size: runtimeModel.size,
-            quality: runtimeModel.quality,
-            referenceImage: hasAvatar ? avatarImage : ""
+            combo,
+            creatorId: effectiveCreatorId,
+            creatorName,
+            creatorEmailHash
           });
-
-          const item = await saveGeneratedImage({ image, model: runtimeModel.model, meta, prompt, combo, creatorId: effectiveCreatorId, creatorName, creatorEmailHash });
           const category = getCategoryForMeta(meta);
           const quota = await consumeQuota(quotaInput);
           sendJson(res, 200, {
             image: item.imageUrl,
             cached: false,
             comboKey: item.comboKey,
+            fallback: generationFallback,
             item: toPublicGalleryItem(item, effectiveCreatorId),
             meta: { ...meta, category, categoryName: getCategoryName(category) },
-            quota
+            quota,
+            warning: generationFallback ? generationWarning : ""
           });
         } catch (error) {
           server.config.logger.error(error);
