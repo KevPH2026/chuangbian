@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import { assertAdminAccess, getAdminDashboard } from "./lib/adminData.js";
+import { sendLoginCode, verifyAuthToken, verifyLoginCode } from "./lib/authStore.js";
 import { buildChuangbianPrompt, normalizeCaption } from "./lib/chuangbianPrompt.js";
 import {
   buildCombo,
@@ -17,6 +18,7 @@ import {
   updateGalleryThumbnail
 } from "./lib/galleryStore.js";
 import { generateImage } from "./lib/imageProvider.js";
+import { getTodayMemeMetrics, trackTodayMemeVisit } from "./lib/metricsStore.js";
 import { getRuntimeModelConfig, saveModelConfig } from "./lib/modelConfigStore.js";
 import { saveUserProfileUpload } from "./lib/profileStore.js";
 import {
@@ -101,19 +103,91 @@ function imageApiPlugin(env) {
 
         try {
           const body = await readJson(req);
+          const auth = verifyAuthToken(body.authToken);
+          if (!auth) {
+            sendJson(res, 401, { error: "先邮箱验证码登录，再上传自己的窗边替身。" });
+            return;
+          }
           const profile = await saveUserProfileUpload({
             avatarImage: body.avatarImage,
             ip: getClientIp(req),
             referralCode: body.referralCode,
             userAgent: getHeader(req, "user-agent"),
-            userEmail: body.userEmail,
-            userName: body.userName,
-            viewerId: body.viewerId
+            userEmail: auth.email,
+            userName: auth.name,
+            viewerId: auth.viewerId
           });
           sendJson(res, 200, { ok: true, profile });
         } catch (error) {
           server.config.logger.error(error);
           sendJson(res, error?.status || 500, { error: error?.message || "Profile upload failed" });
+        }
+      });
+
+      server.middlewares.use("/api/auth", async (req, res) => {
+        if (req.method !== "POST") {
+          sendJson(res, 405, { error: "Only POST is supported" });
+          return;
+        }
+
+        try {
+          const body = await readJson(req);
+          const action = String(body.action || "").trim();
+          if (action === "send") {
+            const result = await sendLoginCode({
+              email: body.email,
+              ip: getClientIp(req),
+              name: body.name,
+              userAgent: getHeader(req, "user-agent")
+            });
+            sendJson(res, 200, { ok: true, ...result });
+            return;
+          }
+
+          if (action === "verify") {
+            const result = await verifyLoginCode({
+              code: body.code,
+              email: body.email,
+              ip: getClientIp(req),
+              name: body.name,
+              referralCode: body.referralCode,
+              userAgent: getHeader(req, "user-agent"),
+              viewerId: body.viewerId
+            });
+            sendJson(res, 200, { ok: true, ...result });
+            return;
+          }
+
+          sendJson(res, 400, { error: "Unknown auth action" });
+        } catch (error) {
+          server.config.logger.error(error);
+          sendJson(res, error?.status || 500, { error: error?.message || "Auth request failed" });
+        }
+      });
+
+      server.middlewares.use("/api/metrics", async (req, res) => {
+        try {
+          if (req.method === "GET") {
+            const metrics = await getTodayMemeMetrics();
+            sendJson(res, 200, { metrics });
+            return;
+          }
+
+          if (req.method === "POST") {
+            const body = await readJson(req);
+            const metrics = await trackTodayMemeVisit({
+              ip: getClientIp(req),
+              userAgent: getHeader(req, "user-agent"),
+              viewerId: body.viewerId
+            });
+            sendJson(res, 200, { metrics });
+            return;
+          }
+
+          sendJson(res, 405, { error: "Only GET and POST are supported" });
+        } catch (error) {
+          server.config.logger.error(error);
+          sendJson(res, error?.status || 500, { error: error?.message || "Metrics request failed" });
         }
       });
 
@@ -127,11 +201,12 @@ function imageApiPlugin(env) {
 
           const body = await readJson(req);
           if (req.method === "POST") {
+            const auth = verifyAuthToken(body.authToken);
             const wish = await saveWish({
-              email: cleanCreatorEmail(body.userEmail),
-              name: cleanCreatorName(body.userName),
+              email: auth ? cleanCreatorEmail(auth.email) : "",
+              name: auth ? cleanCreatorName(auth.name) : cleanCreatorName(body.userName),
               text: body.text,
-              viewerId: cleanViewerId(body.viewerId)
+              viewerId: auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(body.viewerId)
             });
             const items = await getPublicWishes({ voterKey: getClientIp(req) });
             sendJson(res, 200, { ok: true, items, wish });
@@ -163,12 +238,13 @@ function imageApiPlugin(env) {
 
         try {
           const url = new URL(req.url || "", "http://localhost");
+          const auth = verifyAuthToken(url.searchParams.get("authToken"));
           const quota = await getQuotaStatus({
             ip: getClientIp(req),
             referralCode: cleanReferralCode(url.searchParams.get("referralCode")),
-            userEmail: cleanCreatorEmail(url.searchParams.get("userEmail")),
-            userName: cleanCreatorName(url.searchParams.get("userName")),
-            viewerId: cleanViewerId(url.searchParams.get("viewerId"))
+            userEmail: auth ? cleanCreatorEmail(auth.email) : "",
+            userName: auth ? cleanCreatorName(auth.name) : "",
+            viewerId: auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(url.searchParams.get("viewerId"))
           });
           sendJson(res, 200, { quota });
         } catch (error) {
@@ -192,9 +268,10 @@ function imageApiPlugin(env) {
           }
 
           const avatarImage = cleanAvatarImage(body.avatarImage);
-          const creatorId = cleanViewerId(body.creatorId);
-          const creatorName = cleanCreatorName(body.userName);
-          const creatorEmail = cleanCreatorEmail(body.userEmail);
+          const auth = verifyAuthToken(body.authToken);
+          const creatorId = auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(body.creatorId);
+          const creatorName = auth ? cleanCreatorName(auth.name) : "无名受害者";
+          const creatorEmail = auth ? cleanCreatorEmail(auth.email) : "";
           const creatorEmailHash = creatorEmail ? hashGalleryVariant(creatorEmail.toLowerCase()) : "";
           const quotaInput = {
             ip: getClientIp(req),
@@ -217,9 +294,13 @@ function imageApiPlugin(env) {
             throw error;
           }
 
-          const hasAvatar = body.role === "avatar" && Boolean(avatarImage);
+          const hasAvatar = body.role === "avatar" && Boolean(auth) && Boolean(avatarImage);
+          if (body.role === "avatar" && !auth) {
+            sendJson(res, 401, { error: "先用邮箱验证码登录，再让自己的形象去站窗边。", quota: quotaPreview });
+            return;
+          }
           if (body.role === "avatar" && !hasAvatar) {
-            sendJson(res, 400, { error: "选择“我的头像”前，先注册昵称、邮箱并上传头像。", quota: quotaPreview });
+            sendJson(res, 400, { error: "选择“我的头像”前，先上传一张自己的形象。", quota: quotaPreview });
             return;
           }
 
@@ -228,7 +309,7 @@ function imageApiPlugin(env) {
             text,
             role: body.role,
             hasAvatar,
-            userName: body.userName
+            userName: creatorName
           });
           const combo = buildCombo({ text, role: meta.role, variant: avatarVariant });
           const cached = await findGalleryItem(combo.comboKey);
@@ -389,6 +470,8 @@ export default defineConfig(({ mode }) => {
     "OPENAI_IMAGE_MODEL",
     "OPENAI_IMAGE_QUALITY",
     "OPENAI_IMAGE_SIZE",
+    "EMAIL_FROM",
+    "RESEND_API_KEY",
     "VERCEL_OIDC_TOKEN"
   ]) {
     if (useMemoryStorage && ["BLOB_READ_WRITE_TOKEN", "VERCEL_OIDC_TOKEN"].includes(key)) {

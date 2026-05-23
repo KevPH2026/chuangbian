@@ -1,5 +1,6 @@
 import { cleanCreatorEmail, cleanCreatorName, cleanViewerId, getClientIp } from "../lib/quotaStore.js";
 import { getPublicWishes, saveWish, voteWish } from "../lib/wishStore.js";
+import { verifyAuthToken } from "../lib/authStore.js";
 
 export default async function handler(req, res) {
   try {
@@ -11,11 +12,12 @@ export default async function handler(req, res) {
 
     const body = parseBody(req.body);
     if (req.method === "POST") {
+      const auth = verifyAuthToken(body.authToken);
       const wish = await saveWish({
-        email: cleanCreatorEmail(body.userEmail),
-        name: cleanCreatorName(body.userName),
+        email: auth ? cleanCreatorEmail(auth.email) : "",
+        name: auth ? cleanCreatorName(auth.name) : cleanCreatorName(body.userName),
         text: body.text,
-        viewerId: cleanViewerId(body.viewerId)
+        viewerId: auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(body.viewerId)
       });
       const items = await getPublicWishes({ voterKey: getClientIp(req) });
       res.status(200).json({ ok: true, items, wish });

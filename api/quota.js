@@ -6,6 +6,7 @@ import {
   getClientIp,
   getQuotaStatus
 } from "../lib/quotaStore.js";
+import { verifyAuthToken } from "../lib/authStore.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -15,12 +16,13 @@ export default async function handler(req, res) {
 
   try {
     const url = new URL(req.url || "", "http://localhost");
+    const auth = verifyAuthToken(url.searchParams.get("authToken"));
     const quota = await getQuotaStatus({
       ip: getClientIp(req),
       referralCode: cleanReferralCode(url.searchParams.get("referralCode")),
-      userEmail: cleanCreatorEmail(url.searchParams.get("userEmail")),
-      userName: cleanCreatorName(url.searchParams.get("userName")),
-      viewerId: cleanViewerId(url.searchParams.get("viewerId"))
+      userEmail: auth ? cleanCreatorEmail(auth.email) : "",
+      userName: auth ? cleanCreatorName(auth.name) : "",
+      viewerId: auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(url.searchParams.get("viewerId"))
     });
     res.status(200).json({ quota });
   } catch (error) {

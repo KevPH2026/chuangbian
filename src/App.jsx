@@ -58,6 +58,17 @@ const examplePool = [
 const exampleCount = 6;
 const localGalleryKey = "chuangbian-local-gallery";
 const localGalleryLimit = 18;
+const authTokenKey = "chuangbian-auth-token";
+const authProfileKey = "chuangbian-auth-profile";
+
+const workplacePack = [
+  "客户说微调一下",
+  "方案在做 人在窗边",
+  "KPI 很亮 我很暗",
+  "这班非上不可吗",
+  "收到 但灵魂不收",
+  "今天也是被工作挑选的一天"
+];
 
 const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
 const galleryCategoryLabels = {
@@ -224,13 +235,20 @@ function App() {
   const [viewerId, setViewerId] = useState(() => getOrCreateViewerId());
   const [referralCode, setReferralCode] = useState(() => getOrCreateReferralCode());
   const [referredBy] = useState(() => readIncomingReferral());
-  const [profileName, setProfileName] = useState(() => readLocalValue("chuangbian-profile-name"));
-  const [profileEmail, setProfileEmail] = useState(() => readLocalValue("chuangbian-profile-email"));
+  const [authToken, setAuthToken] = useState(() => readLocalValue(authTokenKey));
+  const [authProfile, setAuthProfile] = useState(() => readLocalJson(authProfileKey));
+  const [profileName, setProfileName] = useState(
+    () => readLocalJson(authProfileKey)?.name || readLocalValue("chuangbian-profile-name")
+  );
+  const [profileEmail, setProfileEmail] = useState(
+    () => readLocalJson(authProfileKey)?.email || readLocalValue("chuangbian-profile-email")
+  );
+  const [loginCode, setLoginCode] = useState("");
+  const [authStatus, setAuthStatus] = useState("idle");
+  const [authMessage, setAuthMessage] = useState("");
   const [avatarImage, setAvatarImage] = useState(() => readLocalValue("chuangbian-avatar-image"));
   const [profileSyncStatus, setProfileSyncStatus] = useState("idle");
-  const [profileSaved, setProfileSaved] = useState(
-    Boolean(readLocalValue("chuangbian-profile-name")) && isValidEmail(readLocalValue("chuangbian-profile-email"))
-  );
+  const [profileSaved, setProfileSaved] = useState(() => Boolean(readLocalValue(authTokenKey) && readLocalJson(authProfileKey)?.viewerId));
   const [visibleExamples, setVisibleExamples] = useState(() => pickExamples());
   const [imageUrl, setImageUrl] = useState("");
   const [meta, setMeta] = useState(null);
@@ -253,18 +271,23 @@ function App() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [galleryCopyId, setGalleryCopyId] = useState("");
   const [galleryStatus, setGalleryStatus] = useState("loading");
+  const [memeMetrics, setMemeMetrics] = useState(null);
+  const [metricsStatus, setMetricsStatus] = useState("loading");
   const [error, setError] = useState("");
 
   const selectedRole = roles.find((item) => item.id === role) || roles[1];
   const isAvatarRole = role === "avatar";
-  const hasProfile = profileName.trim().length > 0 && isValidEmail(profileEmail);
-  const displayName = profileName.trim() || "无名受害者";
-  const avatarReady = hasProfile && Boolean(avatarImage);
+  const loggedIn = Boolean(profileSaved && authToken && authProfile?.viewerId && authProfile?.email);
+  const authEmail = loggedIn ? authProfile.email : "";
+  const hasProfile = loggedIn;
+  const displayName = loggedIn ? authProfile.name || profileName.trim() || "无名受害者" : profileName.trim() || "无名受害者";
+  const avatarPreview = avatarImage || authProfile?.avatarUrl || "";
+  const avatarReady = loggedIn && Boolean(avatarImage?.startsWith?.("data:image/"));
   const currentMood = useMemo(() => moods.find((item) => item.test(text)) || defaultMood, [text]);
   const windowDiagnosis = useMemo(() => buildWindowDiagnosis(text, currentMood, selectedRole), [text, currentMood, selectedRole]);
   const replyAmmo = useMemo(() => buildReplyAmmo(text, currentMood, selectedRole), [text, currentMood, selectedRole]);
   const quotaBlocked = Boolean(quota && quota.remaining <= 0);
-  const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked;
+  const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked && (!isAvatarRole || avatarReady);
   const visibleGallery = useMemo(
     () => (activeCategory === "all" ? gallery : gallery.filter((item) => item.category === activeCategory)),
     [activeCategory, gallery]
@@ -280,13 +303,37 @@ function App() {
 
   useEffect(() => {
     loadQuota();
-  }, [viewerId, referralCode, profileName, profileEmail]);
+  }, [viewerId, referralCode, authToken]);
+
+  useEffect(() => {
+    loadMemeMetrics();
+    const timer = window.setInterval(loadMemeMetrics, 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [viewerId]);
 
   useEffect(() => {
     window.localStorage.setItem("chuangbian-profile-name", profileName.trim());
     window.localStorage.setItem("chuangbian-profile-email", profileEmail.trim());
-    setProfileSaved(Boolean(profileName.trim()) && isValidEmail(profileEmail));
   }, [profileName, profileEmail]);
+
+  useEffect(() => {
+    if (authToken && authProfile?.viewerId) {
+      writeLocalValue(authTokenKey, authToken);
+      writeLocalJson(authProfileKey, authProfile);
+      setProfileSaved(true);
+      if (authProfile.name && authProfile.name !== profileName) {
+        setProfileName(authProfile.name);
+      }
+      if (authProfile.email && authProfile.email !== profileEmail) {
+        setProfileEmail(authProfile.email);
+      }
+      return;
+    }
+
+    removeLocalValue(authTokenKey);
+    removeLocalValue(authProfileKey);
+    setProfileSaved(false);
+  }, [authToken, authProfile]);
 
   useEffect(() => {
     if (avatarImage) {
@@ -296,18 +343,26 @@ function App() {
     }
   }, [avatarImage]);
 
-  async function generateImage() {
-    const nextText = text.trim();
+  async function generateImage(overrides = {}) {
+    const nextText = String(overrides.text ?? text).trim();
+    const nextRole = String(overrides.role ?? role);
+    const nextIsAvatarRole = nextRole === "avatar";
     if (!nextText) {
       setError("先输入一句窗边时刻。");
       return;
     }
 
-    if (isAvatarRole && !avatarReady) {
-      setError("先登记昵称、邮箱并上传头像，再用“我的头像”生成。");
+    if (nextIsAvatarRole && !avatarReady) {
+      setError(loggedIn ? "先上传一张自己的形象，再让它去站窗边。" : "先用邮箱验证码登录，再解锁自己的形象。");
       return;
     }
 
+    if (overrides.text) {
+      setText(nextText.slice(0, 42));
+    }
+    if (overrides.role && overrides.role !== role) {
+      setRole(nextRole);
+    }
     setStatus("loading");
     setError("");
 
@@ -316,14 +371,15 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          authToken: loggedIn ? authToken : "",
           text: nextText,
-          role,
-          creatorId: viewerId,
+          role: nextRole,
+          creatorId: loggedIn ? authProfile.viewerId : viewerId,
           referralCode: quota?.referralCode || referralCode,
           referredBy,
-          userName: displayName,
-          userEmail: profileEmail.trim(),
-          avatarImage: isAvatarRole ? avatarImage : "",
+          userName: loggedIn ? displayName : "",
+          userEmail: loggedIn ? authEmail : "",
+          avatarImage: nextIsAvatarRole ? avatarImage : "",
           size: "1024x1024",
           quality: "low"
         })
@@ -368,6 +424,7 @@ function App() {
       } else {
         loadGallery();
       }
+      loadMemeMetrics();
     } catch (err) {
       setStatus("error");
       setError(err instanceof Error ? err.message : "生成失败");
@@ -426,9 +483,122 @@ function App() {
     }
   }
 
+  async function sendLoginCode() {
+    const nextName = profileName.trim();
+    const nextEmail = profileEmail.trim();
+    if (!nextName || !isValidEmail(nextEmail)) {
+      setError("昵称和邮箱都填一下，验证码才知道往哪儿跑。");
+      return;
+    }
+
+    setAuthStatus("sending");
+    setAuthMessage("");
+    setError("");
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send",
+          email: nextEmail,
+          name: nextName
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "验证码发送失败");
+      }
+      setAuthStatus("code-sent");
+      setAuthMessage(`验证码已发到 ${data.maskedEmail || nextEmail}，10 分钟内有效。`);
+    } catch (err) {
+      setAuthStatus("error");
+      setError(err instanceof Error ? err.message : "验证码发送失败。");
+    }
+  }
+
+  async function verifyLogin() {
+    const nextName = profileName.trim();
+    const nextEmail = profileEmail.trim();
+    if (!nextName || !isValidEmail(nextEmail) || !loginCode.trim()) {
+      setError("昵称、邮箱、验证码，一个都别少。");
+      return;
+    }
+
+    setAuthStatus("verifying");
+    setAuthMessage("");
+    setError("");
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "verify",
+          code: loginCode.trim(),
+          email: nextEmail,
+          name: nextName,
+          referralCode: quota?.referralCode || referralCode,
+          viewerId
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "验证码登录失败");
+      }
+
+      setAuthToken(data.token || "");
+      setAuthProfile(data.profile || null);
+      setLoginCode("");
+      setAuthStatus("done");
+      setAuthMessage("登录好了。现在可以上传自己的形象去上班受苦了。");
+      if (data.profile?.viewerId) {
+        setViewerId(data.profile.viewerId);
+        writeLocalValue("chuangbian-viewer-id", data.profile.viewerId);
+      }
+      if (data.profile?.name) {
+        setProfileName(data.profile.name);
+      }
+      if (data.profile?.email) {
+        setProfileEmail(data.profile.email);
+      }
+      if (data.profile?.avatarUrl && !avatarImage) {
+        setAuthProfile((current) => ({ ...(current || data.profile), avatarUrl: data.profile.avatarUrl }));
+      }
+      loadQuota();
+    } catch (err) {
+      setAuthStatus("error");
+      setError(err instanceof Error ? err.message : "验证码登录失败。");
+    }
+  }
+
+  function logoutProfile() {
+    setAuthToken("");
+    setAuthProfile(null);
+    setLoginCode("");
+    setAuthStatus("idle");
+    setAuthMessage("已退出。窗边替身下班了。");
+    setAvatarImage("");
+    if (role === "avatar") {
+      setRole("opossum");
+    }
+  }
+
+  function generateWorkplacePack() {
+    if (!loggedIn) {
+      setError("先邮箱验证码登录，职场窗边包才知道谁去受苦。");
+      return;
+    }
+    if (!avatarReady) {
+      setError("先上传自己的形象，再一键生成职场窗边包。");
+      return;
+    }
+    const seed = hashText(`${authProfile.viewerId}:${Date.now()}`);
+    const nextText = workplacePack[seed % workplacePack.length];
+    generateImage({ text: nextText, role: "avatar" });
+  }
+
   async function handleAvatarUpload(event) {
-    if (!hasProfile) {
-      setError("先填昵称和邮箱完成注册，再上传自己的形象。");
+    if (!loggedIn) {
+      setError("先用邮箱验证码登录，再上传自己的形象。");
       event.target.value = "";
       return;
     }
@@ -452,7 +622,7 @@ function App() {
   }
 
   async function saveUploadedProfile(nextAvatar) {
-    if (!hasProfile || !nextAvatar) {
+    if (!loggedIn || !nextAvatar) {
       return;
     }
 
@@ -462,11 +632,10 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          authToken,
           avatarImage: nextAvatar,
           referralCode: quota?.referralCode || referralCode,
-          userEmail: profileEmail.trim(),
-          userName: displayName,
-          viewerId
+          viewerId: authProfile?.viewerId || viewerId
         })
       });
       const data = await response.json();
@@ -476,6 +645,9 @@ function App() {
       if (data.profile?.viewerId && data.profile.viewerId !== viewerId) {
         setViewerId(data.profile.viewerId);
         writeLocalValue("chuangbian-viewer-id", data.profile.viewerId);
+      }
+      if (data.profile) {
+        setAuthProfile((current) => ({ ...(current || {}), ...data.profile, email: authEmail || profileEmail.trim() }));
       }
       setProfileSyncStatus("done");
       window.setTimeout(() => setProfileSyncStatus("idle"), 1800);
@@ -489,10 +661,11 @@ function App() {
     try {
       const params = new URLSearchParams({
         referralCode,
-        userEmail: profileEmail.trim(),
-        userName: displayName,
         viewerId
       });
+      if (loggedIn && authToken) {
+        params.set("authToken", authToken);
+      }
       const response = await fetch(`/api/quota?${params.toString()}`);
       const data = await response.json();
       if (response.ok && data.quota) {
@@ -501,6 +674,25 @@ function App() {
       }
     } catch {
       setQuota(null);
+    }
+  }
+
+  async function loadMemeMetrics() {
+    setMetricsStatus((current) => (current === "done" ? "refreshing" : "loading"));
+    try {
+      const response = await fetch("/api/metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ viewerId })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "今日 Meme 人数加载失败");
+      }
+      setMemeMetrics(data.metrics || null);
+      setMetricsStatus("done");
+    } catch {
+      setMetricsStatus("error");
     }
   }
 
@@ -680,9 +872,10 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          authToken: loggedIn ? authToken : "",
           text: nextWish,
-          userEmail: profileEmail.trim(),
-          userName: displayName,
+          userEmail: loggedIn ? authEmail : "",
+          userName: loggedIn ? displayName : "匿名许愿怪",
           viewerId
         })
       });
@@ -769,6 +962,18 @@ function App() {
           <span>速速偷走</span>
           <span>{gallery.length} 个受害者</span>
         </div>
+      </section>
+
+      <section className="live-board" aria-label="今日 Meme 人数">
+        <div>
+          <span className="live-dot">LIVE</span>
+          <strong>今日 Meme 人数</strong>
+          <small>{metricsStatus === "error" ? "看板短暂离线，精神状态仍在线" : "5 分钟跳一次，看起来非常忙"}</small>
+        </div>
+        <b>{memeMetrics ? memeMetrics.visibleUv : "78"}</b>
+        <p>
+          今日访问 UV · {memeMetrics?.hits ? `围观 ${memeMetrics.hits} 次` : "正在蹲窗边"}
+        </p>
       </section>
 
       <section className="creator">
@@ -896,15 +1101,20 @@ function App() {
           </button>
         </section>
 
-        <section className={cn("passport-card", profileSaved && "passport-ready")}>
+        <section className={cn("passport-card", loggedIn && "passport-ready")}>
           <div className="passport-head">
             <div className="avatar-preview">
-              {avatarImage ? <img src={avatarImage} alt="已上传头像" /> : <UserRound size={24} />}
+              {avatarPreview ? <img src={avatarPreview} alt="已上传头像" /> : <UserRound size={24} />}
             </div>
             <div>
-              <span>{profileSaved ? "已登录，形象上传解锁" : "邮箱轻登录后解锁形象"}</span>
-              <strong>{avatarReady ? `${profileName.trim()} 的窗边替身` : profileSaved ? "上传头像生成自己的窗边" : "昵称和邮箱填完就算登录"}</strong>
+              <span>{loggedIn ? "已登录，形象上传解锁" : "邮箱验证码登录"}</span>
+              <strong>{avatarReady ? `${displayName} 的窗边替身` : loggedIn ? "上传形象，去生成自己的职场窗边" : "填邮箱，收验证码，别假装注册"}</strong>
             </div>
+            {loggedIn && (
+              <button type="button" className="passport-logout" onClick={logoutProfile}>
+                退出
+              </button>
+            )}
           </div>
           <div className="passport-actions">
             <input
@@ -913,6 +1123,7 @@ function App() {
               className="name-input"
               placeholder="昵称"
               aria-label="昵称"
+              disabled={loggedIn}
             />
             <input
               value={profileEmail}
@@ -921,13 +1132,48 @@ function App() {
               placeholder="邮箱"
               aria-label="邮箱"
               inputMode="email"
+              disabled={loggedIn}
             />
-            <label className={cn("upload-button", !hasProfile && "upload-button-disabled")}>
-              <Upload size={15} />
-              {hasProfile ? "上传形象" : "登录解锁"}
-              <input type="file" accept="image/png,image/jpeg,image/webp" disabled={!hasProfile} onChange={handleAvatarUpload} />
-            </label>
+            {!loggedIn ? (
+              <>
+                <button type="button" className="auth-button" onClick={sendLoginCode} disabled={authStatus === "sending"}>
+                  {authStatus === "sending" ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
+                  发验证码
+                </button>
+                <input
+                  value={loginCode}
+                  onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="code-input"
+                  placeholder="验证码"
+                  aria-label="验证码"
+                  inputMode="numeric"
+                />
+                <button type="button" className="auth-button auth-button-dark" onClick={verifyLogin} disabled={authStatus === "verifying"}>
+                  {authStatus === "verifying" ? <Loader2 className="animate-spin" size={15} /> : <LockKeyhole size={15} />}
+                  验证登录
+                </button>
+              </>
+            ) : (
+              <>
+                <label className="upload-button">
+                  <Upload size={15} />
+                  {avatarReady ? "换个形象" : "上传形象"}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
+                </label>
+                <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
+                  <Sparkles size={15} />
+                  生成职场包
+                </button>
+              </>
+            )}
           </div>
+          {authMessage && <small className="auth-note">{authMessage}</small>}
+          {!loggedIn && (
+            <small className="auth-note">登录后可上传自己的形象，额外拿 2 次额度，再把自己派去窗边上班。</small>
+          )}
+          {loggedIn && !avatarReady && (
+            <small className="auth-note">已登录。现在传一张正脸或半身照，AI 会做成拟人 3D 窗边替身，不走漫画风。</small>
+          )}
           {profileSyncStatus !== "idle" && (
             <small className={cn("profile-sync-note", profileSyncStatus === "error" && "profile-sync-note-error")}>
               {profileSyncStatus === "saving" ? "后台正在收录你的形象" : profileSyncStatus === "done" ? "后台已收录，别后悔" : "后台刚才手滑了"}
@@ -1112,7 +1358,12 @@ function App() {
         )}
       </section>
 
-      <footer className="site-footer">powered by @Mr.k · 微信 Kevph2026</footer>
+      <footer className="site-footer">
+        powered by @Mr.k · 微信 Kevph2026 ·{" "}
+        <a href="https://github.com/KevPH2026/chuangbian" target="_blank" rel="noreferrer">
+          GitHub
+        </a>
+      </footer>
 
       <button type="button" className="wish-float-button" onClick={() => setWishOpen(true)}>
         <Sparkles size={16} />
@@ -1548,6 +1799,31 @@ function readLocalValue(key) {
     return window.localStorage.getItem(key) || "";
   } catch {
     return "";
+  }
+}
+
+function readLocalJson(key) {
+  try {
+    const value = window.localStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalJson(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Login still works for this tab even if localStorage refuses the profile.
+  }
+}
+
+function removeLocalValue(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Nothing to clean up if storage is blocked.
   }
 }
 

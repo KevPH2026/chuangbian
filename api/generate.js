@@ -12,6 +12,7 @@ import {
 } from "../lib/galleryStore.js";
 import { generateImage } from "../lib/imageProvider.js";
 import { getRuntimeModelConfig } from "../lib/modelConfigStore.js";
+import { verifyAuthToken } from "../lib/authStore.js";
 import {
   cleanCreatorEmail,
   cleanCreatorName,
@@ -37,9 +38,10 @@ export default async function handler(req, res) {
     }
 
     const avatarImage = cleanAvatarImage(body.avatarImage);
-    const creatorId = cleanViewerId(body.creatorId);
-    const creatorName = cleanCreatorName(body.userName);
-    const creatorEmail = cleanCreatorEmail(body.userEmail);
+    const auth = verifyAuthToken(body.authToken);
+    const creatorId = auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(body.creatorId);
+    const creatorName = auth ? cleanCreatorName(auth.name) : "无名受害者";
+    const creatorEmail = auth ? cleanCreatorEmail(auth.email) : "";
     const creatorEmailHash = creatorEmail ? hashGalleryVariant(creatorEmail.toLowerCase()) : "";
     const quotaInput = {
       ip: getClientIp(req),
@@ -62,9 +64,13 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    const hasAvatar = body.role === "avatar" && Boolean(avatarImage);
+    const hasAvatar = body.role === "avatar" && Boolean(auth) && Boolean(avatarImage);
+    if (body.role === "avatar" && !auth) {
+      res.status(401).json({ error: "先用邮箱验证码登录，再让自己的形象去站窗边。", quota: quotaPreview });
+      return;
+    }
     if (body.role === "avatar" && !hasAvatar) {
-      res.status(400).json({ error: "选择“我的头像”前，先注册昵称、邮箱并上传头像。", quota: quotaPreview });
+      res.status(400).json({ error: "选择“我的头像”前，先上传一张自己的形象。", quota: quotaPreview });
       return;
     }
 
@@ -73,7 +79,7 @@ export default async function handler(req, res) {
       text,
       role: body.role,
       hasAvatar,
-      userName: body.userName
+      userName: creatorName
     });
     const combo = buildCombo({ text, role: meta.role, variant: avatarVariant });
     const cached = await findGalleryItem(combo.comboKey);

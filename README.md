@@ -29,6 +29,7 @@ CHUANGBIAN_STORAGE=memory npm run dev
 - `ADMIN_TOKEN`：后台口令，生产环境必须配置。
 - `CONFIG_ENCRYPTION_KEY`：后台模型 Key 的加密密钥，开源部署建议单独设置并保持稳定。
 - `BLOB_READ_WRITE_TOKEN`：Vercel Blob Token，用于保存图库、头像、许愿墙和后台配置。
+- `RESEND_API_KEY` / `EMAIL_FROM`：邮箱验证码登录，用于注册昵称、邮箱并解锁上传形象。
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_IMAGE_MODEL`：后台模型配置关闭时的兜底生图配置。
 
 不要把 `.env.local` 或真实 Key 提交到仓库。

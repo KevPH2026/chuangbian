@@ -1,5 +1,6 @@
 import { getClientIp } from "../lib/quotaStore.js";
 import { saveUserProfileUpload } from "../lib/profileStore.js";
+import { verifyAuthToken } from "../lib/authStore.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -9,14 +10,19 @@ export default async function handler(req, res) {
 
   try {
     const body = parseBody(req.body);
+    const auth = verifyAuthToken(body.authToken);
+    if (!auth) {
+      res.status(401).json({ error: "先邮箱验证码登录，再上传自己的窗边替身。" });
+      return;
+    }
     const profile = await saveUserProfileUpload({
       avatarImage: body.avatarImage,
       ip: getClientIp(req),
       referralCode: body.referralCode,
       userAgent: getHeader(req, "user-agent"),
-      userEmail: body.userEmail,
-      userName: body.userName,
-      viewerId: body.viewerId
+      userEmail: auth.email,
+      userName: auth.name,
+      viewerId: auth.viewerId
     });
     res.status(200).json({ ok: true, profile });
   } catch (error) {

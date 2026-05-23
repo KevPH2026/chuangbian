@@ -101,6 +101,7 @@ button:disabled {
 }
 
 .hero-strip,
+.live-board,
 .creator,
 .result,
 .gallery-panel {
@@ -110,6 +111,63 @@ button:disabled {
   background: var(--panel);
   box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
   backdrop-filter: blur(18px);
+}
+
+.live-board {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 64, 175, 0.86), rgba(34, 211, 238, 0.74)),
+    #0f172a;
+  color: #f8fafc;
+}
+
+.live-board div {
+  display: grid;
+  gap: 4px;
+}
+
+.live-board strong {
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.live-board small,
+.live-board p {
+  margin: 0;
+  color: rgba(248, 250, 252, 0.72);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.live-board b {
+  color: #bef264;
+  font-size: clamp(34px, 7vw, 56px);
+  font-weight: 1000;
+  line-height: 0.9;
+}
+
+.live-board p {
+  min-width: 106px;
+  text-align: right;
+}
+
+.live-dot {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 22px;
+  align-items: center;
+  border: 1px solid rgba(190, 242, 100, 0.46);
+  border-radius: 999px;
+  background: rgba(190, 242, 100, 0.16);
+  color: #d9f99d;
+  font-size: 11px;
+  font-weight: 1000;
+  padding: 0 8px;
 }
 
 .hero-strip {
@@ -648,13 +706,16 @@ button:disabled {
 
 .passport-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .name-input,
 .email-input,
-.upload-button {
+.code-input,
+.upload-button,
+.auth-button,
+.passport-logout {
   min-height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -662,14 +723,7 @@ button:disabled {
   color: var(--ink);
 }
 
-.name-input {
-  width: 100%;
-  outline: none;
-  padding: 0 10px;
-  font-size: 13px;
-  font-weight: 900;
-}
-
+.name-input,
 .email-input {
   width: 100%;
   outline: none;
@@ -679,9 +733,25 @@ button:disabled {
 }
 
 .name-input:focus,
-.email-input:focus {
+.email-input:focus,
+.code-input:focus {
   border-color: rgba(139, 92, 246, 0.5);
   box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+}
+
+.name-input:disabled,
+.email-input:disabled {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.code-input {
+  width: 100%;
+  outline: none;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: 0;
 }
 
 .upload-button {
@@ -693,6 +763,35 @@ button:disabled {
   color: #4338ca;
   font-size: 12px;
   font-weight: 1000;
+}
+
+.auth-button,
+.passport-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #075985;
+  font-size: 12px;
+  font-weight: 1000;
+  padding: 0 10px;
+}
+
+.auth-button-dark {
+  border-color: rgba(15, 23, 42, 0.14);
+  background: #0f172a;
+  color: #fff;
+}
+
+.passport-logout {
+  flex: 0 0 auto;
+  min-height: 32px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #475569;
+}
+
+.auth-button:disabled {
+  opacity: 0.62;
 }
 
 .upload-button input {
@@ -708,6 +807,13 @@ button:disabled {
   color: #166534;
   font-size: 12px;
   font-weight: 950;
+}
+
+.auth-note {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.45;
 }
 
 .profile-sync-note-error {
@@ -1975,6 +2081,15 @@ button:disabled {
     flex-direction: column;
   }
 
+  .live-board {
+    grid-template-columns: 1fr auto;
+  }
+
+  .live-board p {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
   .ticker-rail {
     justify-content: flex-start;
     max-width: none;
@@ -2031,6 +2146,7 @@ button:disabled {
   }
 
   .hero-strip,
+  .live-board,
   .creator,
   .result,
   .gallery-panel,
