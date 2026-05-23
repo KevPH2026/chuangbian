@@ -243,6 +243,7 @@ function App() {
   const [profileEmail, setProfileEmail] = useState(
     () => readLocalJson(authProfileKey)?.email || readLocalValue("chuangbian-profile-email")
   );
+  const [loginTicket, setLoginTicket] = useState("");
   const [loginCode, setLoginCode] = useState("");
   const [authStatus, setAuthStatus] = useState("idle");
   const [authMessage, setAuthMessage] = useState("");
@@ -493,6 +494,7 @@ function App() {
 
     setAuthStatus("sending");
     setAuthMessage("");
+    setLoginTicket("");
     setError("");
     try {
       const response = await fetch("/api/auth", {
@@ -509,6 +511,7 @@ function App() {
         throw new Error(data.error || "验证码发送失败");
       }
       setAuthStatus("code-sent");
+      setLoginTicket(data.loginTicket || "");
       setAuthMessage(`验证码已发到 ${data.maskedEmail || nextEmail}，10 分钟内有效。`);
     } catch (err) {
       setAuthStatus("error");
@@ -535,6 +538,7 @@ function App() {
           action: "verify",
           code: loginCode.trim(),
           email: nextEmail,
+          loginTicket,
           name: nextName,
           referralCode: quota?.referralCode || referralCode,
           viewerId
@@ -547,6 +551,7 @@ function App() {
 
       setAuthToken(data.token || "");
       setAuthProfile(data.profile || null);
+      setLoginTicket("");
       setLoginCode("");
       setAuthStatus("done");
       setAuthMessage("登录好了。现在可以上传自己的形象去上班受苦了。");
@@ -573,6 +578,7 @@ function App() {
   function logoutProfile() {
     setAuthToken("");
     setAuthProfile(null);
+    setLoginTicket("");
     setLoginCode("");
     setAuthStatus("idle");
     setAuthMessage("已退出。窗边替身下班了。");

@@ -26,6 +26,7 @@ export default async function handler(req, res) {
         code: body.code,
         email: body.email,
         ip: getClientIp(req),
+        loginTicket: body.loginTicket,
         name: body.name,
         referralCode: body.referralCode,
         userAgent: getHeader(req, "user-agent"),
