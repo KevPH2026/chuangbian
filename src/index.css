@@ -1022,6 +1022,21 @@ button:disabled {
   background: #050b14;
 }
 
+.gallery-blocked-thumb {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  background:
+    linear-gradient(135deg, rgba(226, 232, 240, 0.95), rgba(219, 234, 254, 0.8)),
+    #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
 .gallery-item-body {
   display: grid;
   gap: 3px;
@@ -1062,6 +1077,12 @@ button:disabled {
   padding: 0 6px;
   color: var(--ink);
   font-size: 12px;
+}
+
+.gallery-copy:disabled,
+.gallery-copy-disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .gallery-delete {

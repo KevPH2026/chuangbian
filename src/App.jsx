@@ -993,7 +993,14 @@ function App() {
           <div className="gallery-grid">
             {visibleGallery.map((item) => (
               <article key={item.id} className="gallery-item">
-                <img src={item.thumbnail || item.imageUrl || item.image} alt={item.caption || "窗边缩略图"} loading="lazy" />
+                {item.blocked ? (
+                  <div className="gallery-blocked-thumb">
+                    <ImageIcon size={28} />
+                    <span>Blob 暂停</span>
+                  </div>
+                ) : (
+                  <img src={item.thumbnail || item.imageUrl || item.image} alt={item.caption || "窗边缩略图"} loading="lazy" />
+                )}
                 <div className="gallery-item-body">
                   <strong>{item.caption || "窗边时刻"}</strong>
                   <span>
@@ -1006,19 +1013,18 @@ function App() {
                       .join(" / ") || "窗边"}
                   </span>
                   <div className="gallery-card-actions">
-                    <button type="button" className="gallery-copy desktop-image-action" onClick={() => copyGalleryImage(item)}>
+                    <button type="button" className="gallery-copy desktop-image-action" onClick={() => copyGalleryImage(item)} disabled={item.blocked}>
                       <Copy size={13} />
-                      {galleryCopyId === `${item.comboKey || item.id}:done` ? "已复制" : "复制"}
+                      {item.blocked ? "待恢复" : galleryCopyId === `${item.comboKey || item.id}:done` ? "已复制" : "复制"}
                     </button>
-                    <a
-                      className="gallery-copy desktop-image-action"
-                      href={item.downloadUrl || item.imageUrl || item.image}
-                      download={`chuangbian-meme-${item.comboKey || item.id}.png`}
+                    <a className={cn("gallery-copy desktop-image-action", item.blocked && "gallery-copy-disabled")}
+                      href={item.blocked ? undefined : item.downloadUrl || item.imageUrl || item.image}
+                      download={item.blocked ? undefined : `chuangbian-meme-${item.comboKey || item.id}.png`}
                     >
                       <Download size={13} />
-                      PNG
+                      {item.blocked ? "403" : "PNG"}
                     </a>
-                    <div className="mobile-save-hint">长按图片保存或转发</div>
+                    <div className="mobile-save-hint">{item.blocked ? "旧图还在，但 Blob 暂停导致暂时看不到" : "长按图片保存或转发"}</div>
                     <button type="button" className="gallery-copy gallery-delete" onClick={deleteGalleryImage}>
                       <Trash2 size={13} />
                       删掉
