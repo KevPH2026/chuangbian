@@ -28,7 +28,9 @@ CHUANGBIAN_STORAGE=memory npm run dev
 
 - `ADMIN_TOKEN`：后台口令，生产环境必须配置。
 - `CONFIG_ENCRYPTION_KEY`：后台模型 Key 的加密密钥，开源部署建议单独设置并保持稳定。
-- `BLOB_READ_WRITE_TOKEN`：Vercel Blob Token，用于保存图库、头像、许愿墙和后台配置。
+- `CHUANGBIAN_STORAGE`：存储模式，支持 `blob`、`github`、`memory`。
+- `BLOB_READ_WRITE_TOKEN`：`blob` 模式下的 Vercel Blob Token，用于保存图库、头像、许愿墙和后台配置。
+- `CHUANGBIAN_GITHUB_REPO` / `CHUANGBIAN_GITHUB_BRANCH` / `CHUANGBIAN_GITHUB_DIR` / `CHUANGBIAN_GITHUB_TOKEN`：`github` 模式下的数据仓库、分支、目录和写入 Token。
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_IMAGE_MODEL`：后台模型配置关闭时的兜底生图配置。
 
 不要把 `.env.local` 或真实 Key 提交到仓库。
@@ -53,7 +55,7 @@ npm run check:secrets
 
 当前支持 OpenAI Images API 及 OpenAI 兼容的 `/images/generations`、`/images/edits` 接口。后台已预置 TokenRouter、OpenAI gpt-image、DALL·E 和自定义兼容接口。
 
-后台保存的 API Key 会加密后写入 Vercel Blob，前端只会看到是否已配置和脱敏提示。
+后台保存的 API Key 会加密后写入当前存储后端，前端只会看到是否已配置和脱敏提示。
 
 ## 部署
 
