@@ -93,72 +93,6 @@ const moods = [
 
 const defaultMood = { id: "default", name: "认命看窗", detail: "今晚先站一会儿" };
 
-const diagnosisBank = {
-  question: {
-    titles: ["疑惑拧头型", "当场问号型", "耳朵听脏了型"],
-    details: ["身体还在窗边，头已经开始质问世界。", "适合回那种让对面重新组织语言的话。", "这不是疑问，这是精神刹车。"],
-    replies: ["不是 你再说一遍？", "啊？我没听懂 但我先站窗边", "你要不要看看你在说什么", "这合理吗", "我请问呢"]
-  },
-  money: {
-    titles: ["余额空窗型", "穷鬼常驻型", "账单压颈型"],
-    details: ["钱包没说话，但窗户替它蓝了。", "适合发给一切消费主义刺客。", "不是低气压，是余额正在抽真空。"],
-    replies: ["钱没有 窗边有", "余额在窗边替我沉默", "这个月先别做人了", "账单不同意我活着", "穷得很稳定"]
-  },
-  work: {
-    titles: ["工位被审型", "微调创伤型", "KPI 凝视型"],
-    details: ["看似站窗边，实际被需求按在玻璃上。", "适合回客户、老板、和所有凌晨冒泡的人。", "班味已经从肩膀渗出来了。"],
-    replies: ["客户说微调 我说微死", "方案在做 人在窗边", "KPI 很亮 我很暗", "老板睡了吗 我还没", "收到 但灵魂不收"]
-  },
-  love: {
-    titles: ["已读降温型", "备注遗址型", "蓝窗代哭型"],
-    details: ["消息没回，风先替你回了。", "适合发给所有不值得但很上头的人。", "恋爱脑已下线，窗边脑正在接管。"],
-    replies: ["消息没回 风先回了", "爱没有 已读有", "你说忙 我说行", "备注还在 人不在", "我没事 我站一会儿"]
-  },
-  ai: {
-    titles: ["AI 冷眼型", "算力燃烧型", "人类待优化型"],
-    details: ["不是 AI 不近人情，是人类样本太抽象。", "适合发给所有把人生外包给提示词的人。", "模型在算，人在窗边等命运加载。"],
-    replies: ["人类效率真低 但很会许愿", "提示词写了 人没救了", "模型在算 我在站", "算力在烧 你在笑", "这题建议交给窗边"]
-  },
-  default: {
-    titles: ["认命蓝窗型", "稳定发疯型", "沉默背手型"],
-    details: ["事情还没解决，但姿态已经很完整。", "适合一切说不清但很想发一张图的时刻。", "先别解释了，窗边会替你沉默。"],
-    replies: ["先别说了 站会儿窗边", "人生加载失败", "今天也是稳定发疯", "别问 问就是窗边", "我已抵达窗边"]
-  }
-};
-
-const ammoBank = {
-  question: {
-    polite: ["我先确认一下 你是认真的吗", "收到 但我需要缓一下", "这句话信息量有点大"],
-    shade: ["你这句话把窗户都问沉默了", "我理解不了 但我尊重物种多样性", "你再说一遍 我让负鼠也听听"],
-    window: ["啊？我去窗边重启一下", "这题太抽象 我先背手", "我脖子已经拧过来了"]
-  },
-  money: {
-    polite: ["我先不参与消费主义了", "这个月预算已经投降", "先活着 其他再说"],
-    shade: ["你说得对 但余额不同意", "钱没来 窗边先来了", "我不是抠 我是现金流严谨"],
-    window: ["余额在窗边看着我", "穷得很稳定 站得很端正", "今天先把人生赊着"]
-  },
-  work: {
-    polite: ["收到 我先看一下", "我理解需求 但灵魂另算", "这边先排期哈"],
-    shade: ["微调一下是吧 我微死一下", "方案可以改 人不一定在", "需求很小 伤害很大"],
-    window: ["客户说得对 我先站窗边", "KPI 在蓝窗里发光", "班味太重 我要通风"]
-  },
-  love: {
-    polite: ["没事 我先不打扰了", "收到 祝你忙得开心", "好 我懂了"],
-    shade: ["你忙你的 我站我的窗边", "已读也算一种回复吧", "爱没有 但礼貌还在"],
-    window: ["消息没回 我先背手", "备注还在 人已经蓝了", "我不等了 我站一会儿"]
-  },
-  ai: {
-    polite: ["建议重新输入提示词", "模型理解了 但人类没有", "这个任务建议异步处理"],
-    shade: ["你这需求训练集都没见过", "人类效率低 但很会加需求", "提示词不长 人生挺长"],
-    window: ["算力在烧 我在窗边", "模型沉默了 我也沉默", "AI 看完也想背手"]
-  },
-  default: {
-    polite: ["好的 我先消化一下", "收到 先放这里", "我懂 但不完全懂"],
-    shade: ["你说得很好 下次别说了", "这事不能细想 一想就站窗边", "我没破防 我只是靠近窗户"],
-    window: ["先别说了 去窗边", "人生加载中 请勿催促", "我已切换背手模式"]
-  }
-};
-
 function cn(...values) {
   return values.filter(Boolean).join(" ");
 }
@@ -167,52 +101,6 @@ function isQuestionLike(value) {
   return /[?？]|啊[？?]?$|啊$|吗$|呢$|么$|啥|什么|为啥|为什么|怎么|咋|谁|哪|凭什么|合理吗|真的假的|尊嘟假嘟|不是哥们/i.test(
     String(value || "").trim()
   );
-}
-
-function buildWindowDiagnosis(text, mood, role) {
-  const cleanText = String(text || "").trim() || "啊？";
-  const moodId = diagnosisBank[mood?.id] ? mood.id : "default";
-  const seed = hashText(`${cleanText}:${moodId}:${role?.id || ""}`);
-  const bank = diagnosisBank[moodId];
-  const score = 61 + (seed % 38);
-  const title = pickSeeded(bank.titles, seed);
-  const detail = `${role?.name || "窗边人"}：${pickSeeded(bank.details, Math.floor(seed / 7))}`;
-  const reply = pickSeeded(bank.replies, Math.floor(seed / 13));
-
-  return {
-    detail,
-    reply,
-    score,
-    title
-  };
-}
-
-function buildReplyAmmo(text, mood, role) {
-  const cleanText = String(text || "").trim() || "啊？";
-  const moodId = ammoBank[mood?.id] ? mood.id : "default";
-  const seed = hashText(`ammo:${cleanText}:${moodId}:${role?.id || ""}`);
-  const bank = ammoBank[moodId];
-  return [
-    {
-      id: "polite",
-      label: "体面装死",
-      text: pickSeeded(bank.polite, seed)
-    },
-    {
-      id: "shade",
-      label: "阴阳反问",
-      text: pickSeeded(bank.shade, Math.floor(seed / 11))
-    },
-    {
-      id: "window",
-      label: "彻底窗边",
-      text: pickSeeded(bank.window, Math.floor(seed / 17))
-    }
-  ];
-}
-
-function pickSeeded(items, seed) {
-  return items[Math.abs(seed) % items.length];
 }
 
 function hashText(value) {
@@ -256,8 +144,6 @@ function App() {
   const [cacheHit, setCacheHit] = useState(false);
   const [status, setStatus] = useState("idle");
   const [copyStatus, setCopyStatus] = useState("idle");
-  const [diagnosisCopyStatus, setDiagnosisCopyStatus] = useState("idle");
-  const [ammoCopyStatus, setAmmoCopyStatus] = useState("idle");
   const [inviteStatus, setInviteStatus] = useState("idle");
   const [shareStatus, setShareStatus] = useState("idle");
   const [wishOpen, setWishOpen] = useState(false);
@@ -285,8 +171,6 @@ function App() {
   const avatarPreview = avatarImage || authProfile?.avatarUrl || "";
   const avatarReady = loggedIn && Boolean(avatarImage?.startsWith?.("data:image/"));
   const currentMood = useMemo(() => moods.find((item) => item.test(text)) || defaultMood, [text]);
-  const windowDiagnosis = useMemo(() => buildWindowDiagnosis(text, currentMood, selectedRole), [text, currentMood, selectedRole]);
-  const replyAmmo = useMemo(() => buildReplyAmmo(text, currentMood, selectedRole), [text, currentMood, selectedRole]);
   const quotaBlocked = Boolean(quota && quota.remaining <= 0);
   const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked && (!isAvatarRole || avatarReady);
   const visibleGallery = useMemo(
@@ -440,48 +324,6 @@ function App() {
 
   function rerollExamples() {
     setVisibleExamples(pickExamples(text));
-  }
-
-  function applyDiagnosisReply() {
-    setText(windowDiagnosis.reply.slice(0, 42));
-    setVisibleExamples(pickExamples(windowDiagnosis.reply));
-    setError("");
-  }
-
-  function applyAmmoReply(reply) {
-    setText(String(reply || "").slice(0, 42));
-    setVisibleExamples(pickExamples(reply));
-    setError("");
-  }
-
-  async function copyDiagnosis() {
-    const payload = `窗边体检：${windowDiagnosis.title}｜${windowDiagnosis.score}分\n${windowDiagnosis.detail}\n建议回：${windowDiagnosis.reply}`;
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("当前浏览器不支持直接复制文字。");
-      }
-      await navigator.clipboard.writeText(payload);
-      setDiagnosisCopyStatus("done");
-      window.setTimeout(() => setDiagnosisCopyStatus("idle"), 1400);
-    } catch (err) {
-      setDiagnosisCopyStatus("error");
-      setError(err instanceof Error ? err.message : "复制失败，窗边体检报告拒绝离开窗边。");
-    }
-  }
-
-  async function copyReplyAmmo() {
-    const payload = replyAmmo.map((item) => `${item.label}：${item.text}`).join("\n");
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("当前浏览器不支持直接复制文字。");
-      }
-      await navigator.clipboard.writeText(payload);
-      setAmmoCopyStatus("done");
-      window.setTimeout(() => setAmmoCopyStatus("idle"), 1400);
-    } catch (err) {
-      setAmmoCopyStatus("error");
-      setError(err instanceof Error ? err.message : "复制失败，弹药库卡壳了。");
-    }
   }
 
   async function sendLoginCode() {
@@ -1017,52 +859,6 @@ function App() {
             <strong>{currentMood.name}</strong>
             <small>{currentMood.detail}</small>
           </div>
-          <section className="meme-lab-card" aria-label="窗边体检">
-            <div className="meme-lab-head">
-              <div>
-                <span>窗边体检</span>
-                <strong>{windowDiagnosis.title}</strong>
-              </div>
-              <b>{windowDiagnosis.score}</b>
-            </div>
-            <p>{windowDiagnosis.detail}</p>
-            <div className="meme-lab-reply">
-              <span>建议回</span>
-              <button type="button" onClick={applyDiagnosisReply}>
-                {windowDiagnosis.reply}
-              </button>
-            </div>
-            <div className="meme-lab-actions">
-              <button type="button" onClick={applyDiagnosisReply}>
-                <Sparkles size={14} />
-                帮我发疯
-              </button>
-              <button type="button" onClick={copyDiagnosis}>
-                <Copy size={14} />
-                {diagnosisCopyStatus === "done" ? "已复制" : "复制体检"}
-              </button>
-            </div>
-          </section>
-          <section className="reply-ammo-card" aria-label="回复弹药库">
-            <div className="reply-ammo-head">
-              <div>
-                <span>回复弹药库</span>
-                <strong>挑一句，直接拿去回</strong>
-              </div>
-              <button type="button" onClick={copyReplyAmmo}>
-                <Copy size={13} />
-                {ammoCopyStatus === "done" ? "已复制" : "复制三连"}
-              </button>
-            </div>
-            <div className="reply-ammo-list">
-              {replyAmmo.map((item) => (
-                <button key={item.id} type="button" onClick={() => applyAmmoReply(item.text)}>
-                  <span>{item.label}</span>
-                  <strong>{item.text}</strong>
-                </button>
-              ))}
-            </div>
-          </section>
         </div>
 
         <section className="role-zone" aria-label="角色">
