@@ -62,15 +62,15 @@ const localGalleryLimit = 18;
 const authTokenKey = "chuangbian-auth-token";
 const authProfileKey = "chuangbian-auth-profile";
 const workplacePackSampleImages = [
-  "/recovered-gallery/5119ac05273590dceb0a.png",
-  "/recovered-gallery/59076aa9937fe8175ff1.png",
-  "/recovered-gallery/351db86cb1389ec72117.png",
-  "/recovered-gallery/ee3ce35b0c4504166e36.png",
-  "/recovered-gallery/05ae268ea812afd40743.png",
-  "/recovered-gallery/d9a39a7d47fe1b5e8b30.png",
-  "/recovered-gallery/908d173605da2b67054c.png",
-  "/recovered-gallery/8ca1b0d139711ede9b90.png",
-  "/recovered-gallery/d932053647267c6d6f9e.png"
+  "/workplace-pack-sample/01.png",
+  "/workplace-pack-sample/02.png",
+  "/workplace-pack-sample/03.png",
+  "/workplace-pack-sample/04.png",
+  "/workplace-pack-sample/05.png",
+  "/workplace-pack-sample/06.png",
+  "/workplace-pack-sample/07.png",
+  "/workplace-pack-sample/08.png",
+  "/workplace-pack-sample/09.png"
 ];
 
 const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
