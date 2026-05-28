@@ -20,6 +20,7 @@ import {
   X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { normalizeWorkplacePackCaptions, pickWorkplacePackCaptions, WORKPLACE_PACK_COUNT } from "../lib/workplacePack.js";
 
 const roles = [
   { id: "opossum", name: "负鼠", hint: "原图味", mark: "鼠" },
@@ -61,15 +62,6 @@ const localGalleryLimit = 18;
 const authTokenKey = "chuangbian-auth-token";
 const authProfileKey = "chuangbian-auth-profile";
 
-const workplacePack = [
-  "客户说微调一下",
-  "方案在做 人在窗边",
-  "KPI 很亮 我很暗",
-  "这班非上不可吗",
-  "收到 但灵魂不收",
-  "今天也是被工作挑选的一天"
-];
-
 const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
 const galleryCategoryLabels = {
   all: "全部",
@@ -103,15 +95,6 @@ function isQuestionLike(value) {
   );
 }
 
-function hashText(value) {
-  let hash = 2166136261;
-  for (const char of String(value || "")) {
-    hash ^= char.codePointAt(0) || 0;
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash >>> 0);
-}
-
 function Root() {
   const isAdmin = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   return isAdmin ? <AdminApp /> : <App />;
@@ -137,6 +120,9 @@ function App() {
   const [authMessage, setAuthMessage] = useState("");
   const [avatarImage, setAvatarImage] = useState(() => readLocalValue("chuangbian-avatar-image"));
   const [avatarDragActive, setAvatarDragActive] = useState(false);
+  const [workplacePackText, setWorkplacePackText] = useState(() => pickWorkplacePackCaptions().join("\n"));
+  const [workplacePackItems, setWorkplacePackItems] = useState([]);
+  const [workplacePackStatus, setWorkplacePackStatus] = useState("idle");
   const [profileSyncStatus, setProfileSyncStatus] = useState("idle");
   const [profileSaved, setProfileSaved] = useState(() => Boolean(readLocalValue(authTokenKey) && readLocalJson(authProfileKey)?.viewerId));
   const [visibleExamples, setVisibleExamples] = useState(() => pickExamples());
@@ -171,9 +157,12 @@ function App() {
   const avatarPreview = avatarImage || authProfile?.avatarUrl || "";
   const avatarReady = Boolean(avatarImage?.startsWith?.("data:image/"));
   const currentMood = useMemo(() => moods.find((item) => item.test(text)) || defaultMood, [text]);
+  const workplacePackCaptions = useMemo(() => normalizeWorkplacePackCaptions(workplacePackText), [workplacePackText]);
   const quotaBlocked = Boolean(quota && quota.remaining <= 0);
   const guestAvatarBlocked = Boolean(isAvatarRole && !loggedIn && quota && Number(quota.guestAvatarRemaining || 0) <= 0);
   const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked && !guestAvatarBlocked && (!isAvatarRole || avatarReady);
+  const canGenerateWorkplacePack =
+    loggedIn && avatarReady && status !== "loading" && workplacePackStatus !== "loading" && !quotaBlocked && workplacePackCaptions.length === WORKPLACE_PACK_COUNT;
   const visibleGallery = useMemo(
     () => (activeCategory === "all" ? gallery : gallery.filter((item) => item.category === activeCategory)),
     [activeCategory, gallery]
@@ -437,6 +426,16 @@ function App() {
   }
 
   function generateWorkplacePack() {
+    void submitWorkplacePack();
+  }
+
+  function rerollWorkplacePack() {
+    setWorkplacePackText(pickWorkplacePackCaptions(Date.now()).join("\n"));
+    setWorkplacePackItems([]);
+    setError("");
+  }
+
+  async function submitWorkplacePack() {
     if (!loggedIn) {
       setError("先邮箱验证码登录，职场窗边包才知道谁去受苦。");
       return;
@@ -445,9 +444,64 @@ function App() {
       setError("先上传自己的形象，再一键生成职场窗边包。");
       return;
     }
-    const seed = hashText(`${authProfile.viewerId}:${Date.now()}`);
-    const nextText = workplacePack[seed % workplacePack.length];
-    generateImage({ text: nextText, role: "avatar" });
+    if (workplacePackCaptions.length !== WORKPLACE_PACK_COUNT) {
+      setError("职场包需要 9 句文案，一行一句。也可以点摇骰子随机。");
+      return;
+    }
+
+    setWorkplacePackStatus("loading");
+    setError("");
+    try {
+      const response = await fetch("/api/workplace-pack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          authToken,
+          avatarImage,
+          captions: workplacePackCaptions,
+          referralCode: quota?.referralCode || referralCode,
+          referredBy,
+          size: "1024x1024",
+          quality: "low"
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (data.quota) {
+          setQuota(data.quota);
+        }
+        throw new Error(data.error || "职场包生成失败");
+      }
+
+      const items = Array.isArray(data.items) ? data.items : [];
+      setWorkplacePackItems(items);
+      setQuota(data.quota || null);
+      syncIdentityFromQuota(data.quota);
+      if (items.length) {
+        const nextGallery = mergeGalleryItems(items, gallery);
+        setGallery(nextGallery);
+        setGalleryCategories(getClientGalleryCategories(nextGallery));
+        setActiveCategory("work");
+        const first = items[0];
+        setImageUrl(first.imageUrl || "");
+        setMeta({
+          action: first.action,
+          actionName: first.actionName,
+          caption: first.caption,
+          category: first.category,
+          categoryName: first.categoryName,
+          creatorName: first.creatorName || displayName,
+          role: first.role,
+          roleName: first.roleName
+        });
+        setCacheHit(false);
+      }
+      setWorkplacePackStatus("done");
+      setAuthMessage(data.warning || `职场包已生成 ${items.length} 张，已切成单张入库。`);
+    } catch (err) {
+      setWorkplacePackStatus("error");
+      setError(err instanceof Error ? err.message : "职场包生成失败。");
+    }
   }
 
   async function handleAvatarUpload(event) {
@@ -1006,11 +1060,46 @@ function App() {
               <>
                 <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
                   <Sparkles size={15} />
-                  生成职场包
+                  生成九宫格
                 </button>
               </>
             )}
           </div>
+          {loggedIn && (
+            <section className="workplace-pack-card" aria-label="职场九宫格">
+              <div className="workplace-pack-head">
+                <div>
+                  <span>职场九宫格</span>
+                  <strong>一次生成 9 张，同一风格，自动切图</strong>
+                </div>
+                <button type="button" onClick={rerollWorkplacePack} disabled={workplacePackStatus === "loading"}>
+                  <RefreshCw size={13} />
+                  摇骰子
+                </button>
+              </div>
+              <textarea
+                value={workplacePackText}
+                onChange={(event) => setWorkplacePackText(event.target.value.slice(0, 260))}
+                className="workplace-pack-input"
+                rows={9}
+                placeholder="一行一句，正好 9 句"
+              />
+              <div className="workplace-pack-foot">
+                <span>{workplacePackCaptions.length}/{WORKPLACE_PACK_COUNT} 句</span>
+                <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={!canGenerateWorkplacePack}>
+                  {workplacePackStatus === "loading" ? <Loader2 className="animate-spin" size={15} /> : <Sparkles size={15} />}
+                  {workplacePackStatus === "loading" ? "生成中" : "生成 9 张"}
+                </button>
+              </div>
+              {workplacePackItems.length > 0 && (
+                <div className="workplace-pack-grid">
+                  {workplacePackItems.map((item) => (
+                    <img key={item.comboKey || item.id} src={item.thumbnail || item.imageUrl} alt={item.caption || "职场包"} loading="lazy" />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
           {authMessage && <small className="auth-note">{authMessage}</small>}
           {!loggedIn && (
             <small className="auth-note">游客可用自己的照片生成 1 次；登录后可保存形象并继续生成职场包。</small>

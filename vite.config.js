@@ -31,6 +31,7 @@ import {
   getQuotaStatus
 } from "./lib/quotaStore.js";
 import { getPublicWishes, saveWish, voteWish } from "./lib/wishStore.js";
+import { createWorkplacePack } from "./lib/workplacePackService.js";
 
 function imageApiPlugin(env) {
   return {
@@ -228,6 +229,25 @@ function imageApiPlugin(env) {
         } catch (error) {
           server.config.logger.error(error);
           sendJson(res, error?.status || 500, { error: error?.message || "Wish request failed" });
+        }
+      });
+
+      server.middlewares.use("/api/workplace-pack", async (req, res) => {
+        if (req.method !== "POST") {
+          sendJson(res, 405, { error: "Only POST is supported" });
+          return;
+        }
+
+        try {
+          const body = await readJson(req);
+          const result = await createWorkplacePack({ body, env: { ...env, ...process.env }, req });
+          sendJson(res, 200, result);
+        } catch (error) {
+          server.config.logger.error(error);
+          sendJson(res, error?.status || 500, {
+            error: error?.message || "Workplace pack generation failed",
+            quota: error?.quota
+          });
         }
       });
 
