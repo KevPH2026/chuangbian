@@ -1,0 +1,38 @@
+[
+  {
+    "id": "opossum-question",
+    "caption": "啊？",
+    "actionName": "扭头疑惑",
+    "gif": "/gif-demo/opossum-question.gif",
+    "poster": "/gif-demo/opossum-question.png",
+    "role": "opossum",
+    "roleName": "负鼠"
+  },
+  {
+    "id": "opossum-hello",
+    "caption": "大爷，来玩啊～",
+    "actionName": "伸手社交",
+    "gif": "/gif-demo/opossum-hello.gif",
+    "poster": "/gif-demo/opossum-hello.png",
+    "role": "opossum",
+    "roleName": "负鼠"
+  },
+  {
+    "id": "opossum-low",
+    "caption": "心塞",
+    "actionName": "低气压",
+    "gif": "/gif-demo/opossum-low.gif",
+    "poster": "/gif-demo/opossum-low.png",
+    "role": "opossum",
+    "roleName": "负鼠"
+  },
+  {
+    "id": "opossum-work",
+    "caption": "别搞",
+    "actionName": "工作审判",
+    "gif": "/gif-demo/opossum-work.gif",
+    "poster": "/gif-demo/opossum-work.png",
+    "role": "opossum",
+    "roleName": "负鼠"
+  }
+]

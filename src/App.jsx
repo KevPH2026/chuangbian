@@ -74,6 +74,33 @@ const workplacePackSampleImages = [
   "/workplace-pack-sample/09.png"
 ];
 
+const opossumGifDemos = [
+  {
+    id: "opossum-question",
+    caption: "啊？",
+    actionName: "扭头疑惑",
+    gif: "/gif-demo/opossum-question.gif"
+  },
+  {
+    id: "opossum-hello",
+    caption: "大爷，来玩啊～",
+    actionName: "伸手社交",
+    gif: "/gif-demo/opossum-hello.gif"
+  },
+  {
+    id: "opossum-low",
+    caption: "心塞",
+    actionName: "低气压",
+    gif: "/gif-demo/opossum-low.gif"
+  },
+  {
+    id: "opossum-work",
+    caption: "别搞",
+    actionName: "工作审判",
+    gif: "/gif-demo/opossum-work.gif"
+  }
+];
+
 const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
 const galleryCategoryLabels = {
   all: "全部",
@@ -814,6 +841,14 @@ function App() {
     }
   }
 
+  function previewOpossumGifDemo(item) {
+    setRole("opossum");
+    setText(item.caption);
+    setGifPreviewUrl(item.gif);
+    setGifStatus("idle");
+    setError("");
+  }
+
   async function shareInvite() {
     const activeReferralCode = buildShareReferralCode(quota?.viewerId || viewerId);
     const inviteUrl = `${window.location.origin}${window.location.pathname}?ref=${encodeURIComponent(activeReferralCode)}`;
@@ -1288,6 +1323,21 @@ function App() {
               <span>还没人站过去</span>
             </div>
           )}
+        </div>
+        <div className="opossum-gif-demos" aria-label="负鼠 GIF 示意头像">
+          <div className="opossum-gif-demos-head">
+            <span>GIF 示意头像</span>
+            <strong>负鼠先动一下</strong>
+          </div>
+          <div className="opossum-gif-demo-grid">
+            {opossumGifDemos.map((item) => (
+              <button key={item.id} type="button" onClick={() => previewOpossumGifDemo(item)}>
+                <img src={item.gif} alt={`${item.caption} 负鼠 GIF 示意`} loading="lazy" />
+                <span>{item.caption}</span>
+                <small>{item.actionName}</small>
+              </button>
+            ))}
+          </div>
         </div>
         {gifPreviewUrl && (
           <div className="gif-preview-card">
