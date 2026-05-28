@@ -321,6 +321,14 @@ function App() {
     setVisibleExamples(pickExamples(text));
   }
 
+  function focusLoginForm() {
+    setAuthMessage("填昵称和邮箱，收验证码后解锁职场九宫格。");
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(profileName.trim() ? "profile-email" : "profile-name");
+      target?.focus();
+    });
+  }
+
   async function sendLoginCode() {
     const nextName = profileName.trim();
     const nextEmail = profileEmail.trim();
@@ -1016,6 +1024,7 @@ function App() {
           </div>
           <div className="passport-actions">
             <input
+              id="profile-name"
               value={profileName}
               onChange={(event) => setProfileName(event.target.value.slice(0, 18))}
               className="name-input"
@@ -1024,6 +1033,7 @@ function App() {
               disabled={loggedIn}
             />
             <input
+              id="profile-email"
               value={profileEmail}
               onChange={(event) => setProfileEmail(event.target.value.slice(0, 120))}
               className="email-input"
@@ -1065,6 +1075,32 @@ function App() {
               </>
             )}
           </div>
+          {!loggedIn && (
+            <section className="workplace-pack-card workplace-pack-locked" aria-label="职场九宫格介绍">
+              <div className="workplace-pack-head">
+                <div>
+                  <span>登录解锁</span>
+                  <strong>职场九宫格：一次生成 9 张</strong>
+                </div>
+                <button type="button" onClick={focusLoginForm}>
+                  <LockKeyhole size={13} />
+                  去登录
+                </button>
+              </div>
+              <p className="workplace-pack-copy">用自己的形象，一次生成同一风格的 3x3 职场表情包；系统会自动切成 9 张单图，方便直接复制走。</p>
+              <img
+                className="workplace-pack-sample"
+                src="/recovered-gallery/5119ac05273590dceb0a.png"
+                alt="职场窗边 Meme 真实效果图"
+                loading="lazy"
+              />
+              <div className="workplace-pack-preview-grid" aria-hidden="true">
+                {workplacePackCaptions.slice(0, WORKPLACE_PACK_COUNT).map((caption, index) => (
+                  <span key={`${caption}-${index}`}>{caption}</span>
+                ))}
+              </div>
+            </section>
+          )}
           {loggedIn && (
             <section className="workplace-pack-card" aria-label="职场九宫格">
               <div className="workplace-pack-head">
