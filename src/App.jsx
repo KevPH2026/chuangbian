@@ -20,11 +20,8 @@ import {
   Users,
   X
 } from "lucide-react";
-import gifenc from "gifenc";
 import { useEffect, useMemo, useState } from "react";
 import { normalizeWorkplacePackCaptions, pickWorkplacePackCaptions, WORKPLACE_PACK_COUNT } from "../lib/workplacePack.js";
-
-const { GIFEncoder, applyPalette, quantize } = gifenc;
 
 const roles = [
   { id: "opossum", name: "负鼠", hint: "原图味", mark: "鼠" },
@@ -237,7 +234,7 @@ function App() {
 
   useEffect(() => {
     return () => {
-      if (gifPreviewUrl) {
+      if (gifPreviewUrl?.startsWith?.("blob:")) {
         URL.revokeObjectURL(gifPreviewUrl);
       }
     };
@@ -769,8 +766,14 @@ function App() {
     }
   }
 
-  async function downloadDemoGif(targetImage = imageUrl) {
-    if (!targetImage) {
+  async function downloadDemoGif() {
+    const nextText = text.trim();
+    if (!nextText) {
+      setError("先输入一句话，GIF 才知道该怎么动。");
+      return;
+    }
+    if (role === "avatar" && !avatarReady) {
+      setError("先上传自己的形象，再让它动起来。");
       return;
     }
 
@@ -778,10 +781,31 @@ function App() {
     setError("");
 
     try {
-      const blob = await createDemoGifBlob(targetImage);
-      const previewUrl = URL.createObjectURL(blob);
-      setGifPreviewUrl(previewUrl);
-      downloadBlob(blob, `chuangbian-demo-${Date.now()}.gif`);
+      const response = await fetch("/api/action-gif", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          authToken: loggedIn ? authToken : "",
+          avatarImage: role === "avatar" ? avatarImage : "",
+          creatorId: loggedIn ? authProfile.viewerId : viewerId,
+          quality: "low",
+          referralCode: quota?.referralCode || referralCode,
+          referredBy,
+          role,
+          size: "1024x1024",
+          text: nextText
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "动作 GIF 生成失败。");
+      }
+      setGifPreviewUrl(data.gif);
+      if (data.quota) {
+        setQuota(data.quota);
+        syncQuotaIdentity(data.quota);
+      }
+      downloadUrl(data.gif, `chuangbian-action-${Date.now()}.gif`);
       setGifStatus("done");
       window.setTimeout(() => setGifStatus("idle"), 1400);
     } catch (err) {
@@ -1129,9 +1153,9 @@ function App() {
                   <strong>职场九宫格：一次生成 9 张</strong>
                 </div>
                 <div className="workplace-pack-head-actions">
-                  <button type="button" onClick={() => downloadDemoGif(workplacePackSampleImages[0])} disabled={gifStatus === "encoding"}>
+                  <button type="button" onClick={downloadDemoGif} disabled={gifStatus === "encoding"}>
                     {gifStatus === "encoding" ? <Loader2 className="animate-spin" size={13} /> : <Film size={13} />}
-                    GIF demo
+                    动作 GIF
                   </button>
                   <button type="button" onClick={focusLoginForm}>
                     <LockKeyhole size={13} />
@@ -1245,10 +1269,10 @@ function App() {
                 className="download-button gif-demo-button desktop-image-action"
                 onClick={downloadDemoGif}
                 disabled={gifStatus === "encoding"}
-                title="下载 GIF Demo"
+                title="下载动作 GIF"
               >
                 {gifStatus === "encoding" ? <Loader2 className="animate-spin" size={18} /> : <Film size={18} />}
-                {gifStatus === "done" ? "已出 GIF" : "GIF demo"}
+                {gifStatus === "done" ? "已出 GIF" : "动作 GIF"}
               </button>
               <div className="mobile-save-hint">长按图片保存或转发</div>
             </div>
@@ -1269,8 +1293,8 @@ function App() {
           <div className="gif-preview-card">
             <img src={gifPreviewUrl} alt="窗边 GIF demo 预览" />
             <div>
-              <strong>GIF demo 已生成</strong>
-              <span>蓝光闪一下，精神状态更稳定。</span>
+              <strong>动作 GIF 已生成</strong>
+              <span>按文案生成转头、伸手、缩脖这类动作。</span>
             </div>
             <a href={gifPreviewUrl} download={`chuangbian-demo-${Date.now()}.gif`}>
               再下 GIF
@@ -2125,107 +2149,13 @@ async function copyImageFromUrl(src) {
   await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
 }
 
-async function createDemoGifBlob(src) {
-  if (!GIFEncoder || !quantize || !applyPalette) {
-    throw new Error("GIF 编码器没加载上。");
-  }
-
-  const blob = await fetchRawImageBlob(src);
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const image = await loadImageElement(objectUrl);
-    const size = 240;
-    const frameCount = 12;
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) {
-      throw new Error("浏览器不让画 GIF。");
-    }
-
-    const gif = GIFEncoder();
-    for (let frame = 0; frame < frameCount; frame += 1) {
-      drawDemoGifFrame({ context, frame, frameCount, image, size });
-      const { data } = context.getImageData(0, 0, size, size);
-      const palette = quantize(data, 160, { format: "rgb444" });
-      const index = applyPalette(data, palette);
-      gif.writeFrame(index, size, size, { delay: frame === 0 ? 180 : 90, palette, repeat: 0 });
-    }
-    gif.finish();
-    return new Blob([gif.bytes()], { type: "image/gif" });
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
-function drawDemoGifFrame({ context, frame, frameCount, image, size }) {
-  const phase = frame / frameCount;
-  const pulse = Math.sin(phase * Math.PI * 2);
-  const shake = frame % 4 === 1 ? -1.5 : frame % 4 === 3 ? 1.5 : 0;
-  const zoom = 1.015 + Math.max(0, pulse) * 0.018;
-  const sourceRatio = image.naturalWidth / image.naturalHeight;
-  const targetRatio = 1;
-  let sourceWidth = image.naturalWidth;
-  let sourceHeight = image.naturalHeight;
-  let sourceX = 0;
-  let sourceY = 0;
-
-  if (sourceRatio > targetRatio) {
-    sourceWidth = image.naturalHeight * targetRatio;
-    sourceX = (image.naturalWidth - sourceWidth) / 2;
-  } else {
-    sourceHeight = image.naturalWidth / targetRatio;
-    sourceY = (image.naturalHeight - sourceHeight) / 2;
-  }
-
-  context.clearRect(0, 0, size, size);
-  context.fillStyle = "#061827";
-  context.fillRect(0, 0, size, size);
-  const drawSize = size * zoom;
-  context.drawImage(
-    image,
-    sourceX,
-    sourceY,
-    sourceWidth,
-    sourceHeight,
-    (size - drawSize) / 2 + shake,
-    (size - drawSize) / 2,
-    drawSize,
-    drawSize
-  );
-
-  context.save();
-  context.globalCompositeOperation = "screen";
-  context.fillStyle = `rgba(46, 184, 255, ${0.1 + Math.max(0, pulse) * 0.14})`;
-  context.fillRect(0, 0, size, size);
-  context.restore();
-
-  const gradient = context.createRadialGradient(size * 0.52, size * 0.48, size * 0.12, size / 2, size / 2, size * 0.72);
-  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
-  gradient.addColorStop(1, "rgba(2, 6, 23, 0.34)");
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, size, size);
-}
-
-function loadImageElement(src) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("图片读取失败，GIF 动不起来。"));
-    image.src = src;
-  });
-}
-
-function downloadBlob(blob, fileName) {
-  const url = URL.createObjectURL(blob);
+function downloadUrl(url, fileName) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = fileName;
   document.body.append(anchor);
   anchor.click();
   anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 800);
 }
 
 async function fetchImageBlob(src) {
