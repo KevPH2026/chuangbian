@@ -61,6 +61,17 @@ const localGalleryKey = "chuangbian-local-gallery";
 const localGalleryLimit = 18;
 const authTokenKey = "chuangbian-auth-token";
 const authProfileKey = "chuangbian-auth-profile";
+const workplacePackSampleImages = [
+  "/recovered-gallery/5119ac05273590dceb0a.png",
+  "/recovered-gallery/59076aa9937fe8175ff1.png",
+  "/recovered-gallery/351db86cb1389ec72117.png",
+  "/recovered-gallery/ee3ce35b0c4504166e36.png",
+  "/recovered-gallery/05ae268ea812afd40743.png",
+  "/recovered-gallery/d9a39a7d47fe1b5e8b30.png",
+  "/recovered-gallery/908d173605da2b67054c.png",
+  "/recovered-gallery/8ca1b0d139711ede9b90.png",
+  "/recovered-gallery/d932053647267c6d6f9e.png"
+];
 
 const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
 const galleryCategoryLabels = {
@@ -1088,15 +1099,9 @@ function App() {
                 </button>
               </div>
               <p className="workplace-pack-copy">用自己的形象，一次生成同一风格的 3x3 职场表情包；系统会自动切成 9 张单图，方便直接复制走。</p>
-              <img
-                className="workplace-pack-sample"
-                src="/recovered-gallery/5119ac05273590dceb0a.png"
-                alt="职场窗边 Meme 真实效果图"
-                loading="lazy"
-              />
-              <div className="workplace-pack-preview-grid" aria-hidden="true">
-                {workplacePackCaptions.slice(0, WORKPLACE_PACK_COUNT).map((caption, index) => (
-                  <span key={`${caption}-${index}`}>{caption}</span>
+              <div className="workplace-pack-sample-grid" aria-label="职场九宫格真实效果图">
+                {workplacePackSampleImages.map((src, index) => (
+                  <img key={src} src={src} alt={`职场窗边 Meme 样例 ${index + 1}`} loading="lazy" />
                 ))}
               </div>
             </section>

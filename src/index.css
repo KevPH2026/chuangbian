@@ -713,38 +713,25 @@ button:disabled {
   line-height: 1.5;
 }
 
-.workplace-pack-sample {
-  width: 100%;
-  max-height: 210px;
-  object-fit: cover;
-  object-position: center;
+.workplace-pack-sample-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  overflow: hidden;
   border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 8px;
+  background: rgba(15, 23, 42, 0.08);
+  padding: 4px;
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
 }
 
-.workplace-pack-preview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-}
-
-.workplace-pack-preview-grid span {
-  display: grid;
-  min-height: 44px;
-  place-items: center;
+.workplace-pack-sample-grid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 8px;
-  background:
-    linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(14, 116, 144, 0.72)),
-    #0f172a;
-  color: #ffffff;
-  padding: 6px;
-  font-size: 11px;
-  font-weight: 1000;
-  line-height: 1.2;
-  text-align: center;
+  border-radius: 6px;
 }
 
 .workplace-pack-grid {
