@@ -649,6 +649,12 @@ button:disabled {
   gap: 2px;
 }
 
+.workplace-pack-head .workplace-pack-head-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
 .workplace-pack-head span,
 .workplace-pack-foot span {
   color: var(--muted);
@@ -934,6 +940,13 @@ button:disabled {
   color: #07111d;
 }
 
+.gif-demo-button {
+  border-color: rgba(250, 204, 21, 0.34);
+  background:
+    linear-gradient(135deg, rgba(250, 204, 21, 0.22), rgba(45, 212, 191, 0.18)),
+    rgba(255, 255, 255, 0.12);
+}
+
 .mobile-save-hint {
   display: none;
 }
@@ -971,6 +984,67 @@ button:disabled {
   height: 100%;
   object-fit: contain;
   background: #050b14;
+}
+
+.gif-preview-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(8, 47, 73, 0.82), rgba(15, 23, 42, 0.88)),
+    #0f172a;
+  padding: 9px;
+}
+
+.gif-preview-card img {
+  width: 58px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.22);
+}
+
+.gif-preview-card div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.gif-preview-card strong,
+.gif-preview-card span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gif-preview-card strong {
+  color: #e0f2fe;
+  font-size: 13px;
+  font-weight: 1000;
+}
+
+.gif-preview-card span {
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.gif-preview-card a {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(250, 204, 21, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fef3c7;
+  padding: 0 10px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 1000;
 }
 
 .empty-window {
@@ -2139,6 +2213,14 @@ button:disabled {
     flex-direction: column;
   }
 
+  .workplace-pack-head .workplace-pack-head-actions {
+    width: 100%;
+  }
+
+  .workplace-pack-head .workplace-pack-head-actions button {
+    flex: 1 1 0;
+  }
+
   .workplace-pack-head button,
   .workplace-pack-foot button {
     width: 100%;
@@ -2182,6 +2264,18 @@ button:disabled {
 
   .image-stage {
     width: min(78vw, 300px);
+  }
+
+  .gif-preview-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .gif-preview-card img {
+    width: 52px;
+  }
+
+  .gif-preview-card a {
+    grid-column: 1 / -1;
   }
 
   .category-tabs {
