@@ -803,7 +803,7 @@ function App() {
       setGifPreviewUrl(data.gif);
       if (data.quota) {
         setQuota(data.quota);
-        syncQuotaIdentity(data.quota);
+        syncIdentityFromQuota(data.quota);
       }
       downloadUrl(data.gif, `chuangbian-action-${Date.now()}.gif`);
       setGifStatus("done");
