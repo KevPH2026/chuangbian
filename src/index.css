@@ -498,6 +498,14 @@ button:disabled {
     #ffffff;
 }
 
+.passport-dragging {
+  border-color: rgba(34, 211, 238, 0.95);
+  background:
+    linear-gradient(135deg, rgba(236, 254, 255, 0.98), rgba(240, 253, 250, 0.92)),
+    #ffffff;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.16), 0 18px 42px rgba(15, 23, 42, 0.1);
+}
+
 .avatar-preview {
   display: grid;
   width: 48px;

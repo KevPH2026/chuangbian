@@ -27,7 +27,7 @@ const roles = [
   { id: "worker", name: "打工人", hint: "班味低气压", mark: "工" },
   { id: "boss", name: "老板", hint: "压迫感", mark: "板" },
   { id: "ai", name: "AI助手", hint: "冷脸 AI", mark: "AI" },
-  { id: "avatar", name: "我的头像", hint: "注册解锁", mark: "我" }
+  { id: "avatar", name: "我的头像", hint: "游客 1 次", mark: "我" }
 ];
 
 const examplePool = [
@@ -136,6 +136,7 @@ function App() {
   const [authStatus, setAuthStatus] = useState("idle");
   const [authMessage, setAuthMessage] = useState("");
   const [avatarImage, setAvatarImage] = useState(() => readLocalValue("chuangbian-avatar-image"));
+  const [avatarDragActive, setAvatarDragActive] = useState(false);
   const [profileSyncStatus, setProfileSyncStatus] = useState("idle");
   const [profileSaved, setProfileSaved] = useState(() => Boolean(readLocalValue(authTokenKey) && readLocalJson(authProfileKey)?.viewerId));
   const [visibleExamples, setVisibleExamples] = useState(() => pickExamples());
@@ -166,13 +167,13 @@ function App() {
   const isAvatarRole = role === "avatar";
   const loggedIn = Boolean(profileSaved && authToken && authProfile?.viewerId && authProfile?.email);
   const authEmail = loggedIn ? authProfile.email : "";
-  const hasProfile = loggedIn;
   const displayName = loggedIn ? authProfile.name || profileName.trim() || "无名受害者" : profileName.trim() || "无名受害者";
   const avatarPreview = avatarImage || authProfile?.avatarUrl || "";
-  const avatarReady = loggedIn && Boolean(avatarImage?.startsWith?.("data:image/"));
+  const avatarReady = Boolean(avatarImage?.startsWith?.("data:image/"));
   const currentMood = useMemo(() => moods.find((item) => item.test(text)) || defaultMood, [text]);
   const quotaBlocked = Boolean(quota && quota.remaining <= 0);
-  const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked && (!isAvatarRole || avatarReady);
+  const guestAvatarBlocked = Boolean(isAvatarRole && !loggedIn && quota && Number(quota.guestAvatarRemaining || 0) <= 0);
+  const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked && !guestAvatarBlocked && (!isAvatarRole || avatarReady);
   const visibleGallery = useMemo(
     () => (activeCategory === "all" ? gallery : gallery.filter((item) => item.category === activeCategory)),
     [activeCategory, gallery]
@@ -238,7 +239,12 @@ function App() {
     }
 
     if (nextIsAvatarRole && !avatarReady) {
-      setError(loggedIn ? "先上传一张自己的形象，再让它去站窗边。" : "先用邮箱验证码登录，再解锁自己的形象。");
+      setError("先上传一张自己的形象，再让它去站窗边。");
+      return;
+    }
+
+    if (nextIsAvatarRole && !loggedIn && quota && Number(quota.guestAvatarRemaining || 0) <= 0) {
+      setError("游客用自己照片只能生成 1 次。登录后可以继续管理自己的形象。");
       return;
     }
 
@@ -445,27 +451,53 @@ function App() {
   }
 
   async function handleAvatarUpload(event) {
-    if (!loggedIn) {
-      setError("先用邮箱验证码登录，再上传自己的形象。");
-      event.target.value = "";
-      return;
-    }
-
     const file = event.target.files?.[0];
+    try {
+      await handleAvatarFile(file);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "头像读取失败，请换一张图片。");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  async function handleAvatarFile(file) {
     if (!file) {
       return;
     }
 
     setError("");
-    try {
-      const nextAvatar = await prepareAvatarImage(file);
-      setAvatarImage(nextAvatar);
-      setRole("avatar");
+    const nextAvatar = await prepareAvatarImage(file);
+    setAvatarImage(nextAvatar);
+    setRole("avatar");
+    setProfileSyncStatus("idle");
+    if (loggedIn) {
       saveUploadedProfile(nextAvatar);
+    } else {
+      setAuthMessage("已读取照片。游客可用自己的照片生成 1 次。");
+    }
+  }
+
+  function handleAvatarDrag(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.type === "dragenter" || event.type === "dragover") {
+      setAvatarDragActive(true);
+    }
+    if (event.type === "dragleave") {
+      setAvatarDragActive(false);
+    }
+  }
+
+  async function handleAvatarDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setAvatarDragActive(false);
+    const file = event.dataTransfer?.files?.[0];
+    try {
+      await handleAvatarFile(file);
     } catch (err) {
       setError(err instanceof Error ? err.message : "头像读取失败，请换一张图片。");
-    } finally {
-      event.target.value = "";
     }
   }
 
@@ -879,7 +911,7 @@ function App() {
         <div className="action-row">
           <button type="button" className="primary-button" onClick={generateImage} disabled={!canGenerate}>
             {status === "loading" ? <Loader2 className="animate-spin" size={19} /> : <Sparkles size={19} />}
-            {status === "loading" ? "AI 站窗边中" : quotaBlocked ? "额度见底了" : "生成 Meme"}
+            {status === "loading" ? "AI 站窗边中" : quotaBlocked ? "额度见底了" : guestAvatarBlocked ? "游客照片用完" : "生成 Meme"}
           </button>
           {imageUrl && (
             <button type="button" className="secondary-button" onClick={generateImage} disabled={status === "loading"}>
@@ -895,7 +927,11 @@ function App() {
             <strong>{quota ? `还剩 ${quota.remaining}/${quota.limit} 张` : "额度读取中"}</strong>
           </div>
           <small>
-            {quota?.bonus ? `已拉 ${quota.invitedCount} 个受害者，续了 ${quota.bonus} 张` : "游客也能转发 +5；登录再解锁形象"}
+            {quota?.bonus
+              ? `已拉 ${quota.invitedCount} 个受害者，续了 ${quota.bonus} 张`
+              : loggedIn
+                ? "已登录，可继续管理自己的形象"
+                : `游客照片还剩 ${quota?.guestAvatarRemaining ?? 1}/1 次；转发 +5`}
           </small>
           <button type="button" className="invite-button" onClick={shareInvite}>
             <Share2 size={14} />
@@ -903,14 +939,20 @@ function App() {
           </button>
         </section>
 
-        <section className={cn("passport-card", loggedIn && "passport-ready")}>
+        <section
+          className={cn("passport-card", (loggedIn || avatarReady) && "passport-ready", avatarDragActive && "passport-dragging")}
+          onDragEnter={handleAvatarDrag}
+          onDragLeave={handleAvatarDrag}
+          onDragOver={handleAvatarDrag}
+          onDrop={handleAvatarDrop}
+        >
           <div className="passport-head">
             <div className="avatar-preview">
               {avatarPreview ? <img src={avatarPreview} alt="已上传头像" /> : <UserRound size={24} />}
             </div>
             <div>
-              <span>{loggedIn ? "已登录，形象上传解锁" : "邮箱验证码登录"}</span>
-              <strong>{avatarReady ? `${displayName} 的窗边替身` : loggedIn ? "上传形象，去生成自己的职场窗边" : "填邮箱，收验证码，别假装注册"}</strong>
+              <span>{loggedIn ? "已登录，形象可保存" : "游客可试 1 次自己的照片"}</span>
+              <strong>{avatarReady ? `${displayName} 的窗边替身` : "拖照片到这里，或点上传"}</strong>
             </div>
             {loggedIn && (
               <button type="button" className="passport-logout" onClick={logoutProfile}>
@@ -936,6 +978,11 @@ function App() {
               inputMode="email"
               disabled={loggedIn}
             />
+            <label className="upload-button">
+              <Upload size={15} />
+              {avatarReady ? "换个形象" : "上传/拖照片"}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
+            </label>
             {!loggedIn ? (
               <>
                 <button type="button" className="auth-button" onClick={sendLoginCode} disabled={authStatus === "sending"}>
@@ -957,11 +1004,6 @@ function App() {
               </>
             ) : (
               <>
-                <label className="upload-button">
-                  <Upload size={15} />
-                  {avatarReady ? "换个形象" : "上传形象"}
-                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
-                </label>
                 <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
                   <Sparkles size={15} />
                   生成职场包
@@ -971,7 +1013,7 @@ function App() {
           </div>
           {authMessage && <small className="auth-note">{authMessage}</small>}
           {!loggedIn && (
-            <small className="auth-note">登录后可上传自己的形象，额外拿 2 次额度，再把自己派去窗边上班。</small>
+            <small className="auth-note">游客可用自己的照片生成 1 次；登录后可保存形象并继续生成职场包。</small>
           )}
           {loggedIn && !avatarReady && (
             <small className="auth-note">已登录。现在传一张正脸或半身照，AI 会做成拟人 3D 窗边替身，不走漫画风。</small>

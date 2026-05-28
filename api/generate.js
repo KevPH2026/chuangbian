@@ -39,11 +39,15 @@ export default async function handler(req, res) {
 
     const avatarImage = cleanAvatarImage(body.avatarImage);
     const auth = verifyAuthToken(body.authToken);
+    const wantsAvatar = body.role === "avatar";
+    const hasAvatar = wantsAvatar && Boolean(avatarImage);
+    const guestAvatar = wantsAvatar && !auth;
     const creatorId = auth?.viewerId ? cleanViewerId(auth.viewerId) : cleanViewerId(body.creatorId);
     const creatorName = auth ? cleanCreatorName(auth.name) : "无名受害者";
     const creatorEmail = auth ? cleanCreatorEmail(auth.email) : "";
     const creatorEmailHash = creatorEmail ? hashGalleryVariant(creatorEmail.toLowerCase()) : "";
     const quotaInput = {
+      guestAvatar,
       ip: getClientIp(req),
       referralCode: cleanReferralCode(body.referralCode),
       referredBy: cleanReferralCode(body.referredBy),
@@ -57,19 +61,20 @@ export default async function handler(req, res) {
       const error = new Error(
         quotaPreview.registered
           ? "今天的窗边额度用完了。拉一个新受害者来用，就给你加 5 张。"
-          : "未注册 IP 额度用完了。注册昵称和邮箱后解锁上传自己形象，并额外获得 2 张。"
+          : "未注册 IP 额度用完了。注册昵称和邮箱后额外获得 2 张。"
       );
       error.status = 429;
       error.quota = quotaPreview;
       throw error;
     }
 
-    const hasAvatar = body.role === "avatar" && Boolean(auth) && Boolean(avatarImage);
-    if (body.role === "avatar" && !auth) {
-      res.status(401).json({ error: "先用邮箱验证码登录，再让自己的形象去站窗边。", quota: quotaPreview });
-      return;
+    if (guestAvatar && quotaPreview.guestAvatarRemaining <= 0) {
+      const error = new Error("游客用自己照片只能生成 1 次。登录后可以继续管理自己的形象。");
+      error.status = 429;
+      error.quota = quotaPreview;
+      throw error;
     }
-    if (body.role === "avatar" && !hasAvatar) {
+    if (wantsAvatar && !hasAvatar) {
       res.status(400).json({ error: "选择“我的头像”前，先上传一张自己的形象。", quota: quotaPreview });
       return;
     }
