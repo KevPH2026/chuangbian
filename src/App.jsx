@@ -101,11 +101,12 @@ const opossumGifDemos = [
   }
 ];
 
-const galleryCategoryOrder = ["all", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
+const galleryCategoryOrder = ["all", "gif", "question", "money", "work", "love", "ai", "default", "opossum-original", "recovery"];
 const galleryCategoryLabels = {
   all: "全部",
   ai: "AI",
   default: "认命",
+  gif: "GIF",
   love: "恋爱",
   money: "穷鬼",
   "opossum-original": "原图负鼠",
@@ -832,8 +833,18 @@ function App() {
         setQuota(data.quota);
         syncIdentityFromQuota(data.quota);
       }
+      if (data.item) {
+        const nextGallery = mergeGalleryItems([data.item], gallery, readLocalGalleryItems());
+        setGallery(nextGallery);
+        setGalleryCategories(getClientGalleryCategories(nextGallery));
+        setActiveCategory("gif");
+        setGalleryStatus("done");
+      }
       downloadUrl(data.gif, `chuangbian-action-${Date.now()}.gif`);
       setGifStatus("done");
+      if (data.warning) {
+        setError(data.warning);
+      }
       window.setTimeout(() => setGifStatus("idle"), 1400);
     } catch (err) {
       setGifStatus("error");
@@ -887,12 +898,12 @@ function App() {
     setError("");
 
     try {
-      await copyImageFromUrl(target);
+      await copyImageFromUrl(target, getGalleryMimeType(item));
       setGalleryCopyId(`${item.comboKey || item.id}:done`);
       window.setTimeout(() => setGalleryCopyId(""), 1400);
     } catch (err) {
       setGalleryCopyId("");
-      setError(friendlyImageError(err, "复制失败，可以先下载 PNG。"));
+      setError(friendlyImageError(err, isGifGalleryItem(item) ? "复制失败，可以先下载 GIF。" : "复制失败，可以先下载 PNG。"));
     }
   }
 
@@ -1344,7 +1355,7 @@ function App() {
             <img src={gifPreviewUrl} alt="窗边 GIF demo 预览" />
             <div>
               <strong>动作 GIF 已生成</strong>
-              <span>按文案生成转头、伸手、缩脖这类动作。</span>
+              <span>生成后会进 GIF 库，随手复制或下载。</span>
             </div>
             <a href={gifPreviewUrl} download={`chuangbian-demo-${Date.now()}.gif`}>
               再下 GIF
@@ -1411,10 +1422,10 @@ function App() {
                     </button>
                     <a className={cn("gallery-copy desktop-image-action", item.blocked && "gallery-copy-disabled")}
                       href={item.blocked ? undefined : item.downloadUrl || item.imageUrl || item.image}
-                      download={item.blocked ? undefined : `chuangbian-meme-${item.comboKey || item.id}.png`}
+                      download={item.blocked ? undefined : `chuangbian-meme-${item.comboKey || item.id}.${getGalleryFileExtension(item)}`}
                     >
                       <Download size={13} />
-                      {item.blocked ? "403" : "PNG"}
+                      {item.blocked ? "403" : getGalleryDownloadLabel(item)}
                     </a>
                     <div className="mobile-save-hint">{item.blocked ? "旧图还在，但 Blob 暂停导致暂时看不到" : "长按图片保存或转发"}</div>
                     <button type="button" className="gallery-copy gallery-delete" onClick={deleteGalleryImage}>
@@ -1999,6 +2010,23 @@ function normalizeGalleryItem(item) {
   };
 }
 
+function isGifGalleryItem(item) {
+  const url = String(item?.downloadUrl || item?.imageUrl || item?.thumbnail || "");
+  return item?.mediaType === "gif" || /image\/gif/i.test(String(item?.contentType || "")) || /\.gif($|\?)/i.test(url);
+}
+
+function getGalleryMimeType(item) {
+  return isGifGalleryItem(item) ? "image/gif" : "image/png";
+}
+
+function getGalleryFileExtension(item) {
+  return isGifGalleryItem(item) ? "gif" : "png";
+}
+
+function getGalleryDownloadLabel(item) {
+  return isGifGalleryItem(item) ? "GIF" : "PNG";
+}
+
 function mergeGalleryItems(...groups) {
   const byKey = new Map();
   for (const group of groups) {
@@ -2190,13 +2218,13 @@ function prepareAvatarImage(file) {
   });
 }
 
-async function copyImageFromUrl(src) {
+async function copyImageFromUrl(src, preferredMimeType = "image/png") {
   if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
-    throw new Error("当前浏览器不支持直接复制图片，可以先分享或下载 PNG。");
+    throw new Error("当前浏览器不支持直接复制图片，可以先分享或下载。");
   }
 
-  const blob = await fetchImageBlob(src);
-  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+  const blob = preferredMimeType === "image/gif" ? await fetchRawImageBlob(src) : await fetchImageBlob(src);
+  await navigator.clipboard.write([new ClipboardItem({ [preferredMimeType]: blob })]);
 }
 
 function downloadUrl(url, fileName) {
@@ -2225,10 +2253,10 @@ async function fetchRawImageBlob(src) {
 function friendlyImageError(error, fallback) {
   const message = error instanceof Error ? error.message : "";
   if (/permission|denied|not allowed|not permitted/i.test(message)) {
-    return "浏览器没给图片剪贴板权限，可以点分享或 PNG 下载。";
+    return "浏览器没给图片剪贴板权限，可以点分享或下载。";
   }
   if (/clipboard|ClipboardItem/i.test(message)) {
-    return "当前浏览器不支持直接复制图片，可以点分享或 PNG 下载。";
+    return "当前浏览器不支持直接复制图片，可以点分享或下载。";
   }
   return message || fallback;
 }
