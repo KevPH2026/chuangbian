@@ -1,4 +1,5 @@
 import { buildChuangbianPrompt, normalizeCaption } from "../lib/chuangbianPrompt.js";
+import { generateActionGifAsset, getActionGifDescriptor } from "../lib/actionGifService.js";
 import {
   buildCombo,
   compressImageForMemeDataUrl,
@@ -7,6 +8,7 @@ import {
   getCategoryName,
   hashGalleryVariant,
   markGalleryItemUsed,
+  saveGeneratedGif,
   saveGeneratedImage,
   toPublicGalleryItem
 } from "../lib/galleryStore.js";
@@ -88,82 +90,134 @@ export default async function handler(req, res) {
     });
     const combo = buildCombo({ text, role: meta.role, variant: avatarVariant });
     const cached = await findGalleryItem(combo.comboKey);
+    let item = cached ? (await markGalleryItemUsed(combo.comboKey)) || cached : null;
+    let image = item?.imageUrl || "";
+    const staticCached = Boolean(item);
 
-    if (cached) {
-      const item = (await markGalleryItemUsed(combo.comboKey)) || cached;
-      const quota = await consumeQuota(quotaInput);
-      res.status(200).json({
-        image: item.imageUrl,
-        cached: true,
-        comboKey: item.comboKey,
-        item: toPublicGalleryItem(item, effectiveCreatorId),
-        meta: metaFromItem(item),
-        quota
-      });
-      return;
-    }
-
-    const runtimeModel = await getRuntimeModelConfig({
-      requestedQuality: body.quality || "",
-      requestedSize: body.size || ""
+    const gifDescriptor = getActionGifDescriptor({
+      avatarImage: hasAvatar ? avatarImage : "",
+      role: meta.role,
+      text
     });
-    if (!runtimeModel.apiKey) {
-      res.status(500).json({ error: "生图模型 Key 还没配置。可以在后台模型配置里填 Key，或在部署环境变量里设置 OPENAI_API_KEY。" });
-      return;
-    }
+    const cachedGif = await findGalleryItem(gifDescriptor.combo.comboKey);
+    let gifItem = cachedGif?.mediaType === "gif" ? (await markGalleryItemUsed(gifDescriptor.combo.comboKey)) || cachedGif : null;
+    let gif = gifItem?.imageUrl || "";
+    let gifFrames = [];
+    const gifCached = Boolean(gifItem);
 
-    const image = await generateImage({
-      apiKey: runtimeModel.apiKey,
-      baseURL: runtimeModel.baseURL,
-      model: runtimeModel.model,
-      prompt,
-      size: runtimeModel.size,
-      quality: runtimeModel.quality,
-      referenceImage: hasAvatar ? avatarImage : ""
-    });
-
-    let item;
+    let runtimeModel = null;
     let storageWarning = "";
-    try {
-      item = await saveGeneratedImage({ image, model: runtimeModel.model, meta, prompt, combo, creatorId: effectiveCreatorId, creatorName, creatorEmailHash });
-    } catch (storageError) {
-      if (!isSuspendedStorageError(storageError)) {
-        throw storageError;
+    let gifWarning = "";
+    if (!item || !gifItem) {
+      runtimeModel = await getRuntimeModelConfig({
+        requestedQuality: body.quality || "",
+        requestedSize: body.size || ""
+      });
+      if (!runtimeModel.apiKey) {
+        if (!item) {
+          res.status(500).json({ error: "生图模型 Key 还没配置。可以在后台模型配置里填 Key，或在部署环境变量里设置 OPENAI_API_KEY。" });
+          return;
+        }
+        gifWarning = "静态图命中图库，但 GIF 因模型 Key 未配置没有生成。";
       }
-      storageWarning = "图库存储暂时被暂停，本次先直接返回图片。";
-      const fallbackImage = await compressImageForMemeDataUrl(image).catch(() => image);
-      item = {
-        id: combo.comboKey,
-        comboKey: combo.comboKey,
-        caption: combo.caption,
-        role: meta.role,
-        roleName: meta.roleName,
-        action: meta.action,
-        actionName: meta.actionName,
-        category: getCategoryForMeta(meta),
-        categoryName: getCategoryName(getCategoryForMeta(meta)),
-        creatorId: effectiveCreatorId,
-        creatorName,
-        imageUrl: fallbackImage,
-        downloadUrl: fallbackImage,
-        thumbnail: fallbackImage,
-        uses: 1
-      };
+    }
+
+    if (runtimeModel?.apiKey) {
+      const [staticResult, gifResult] = await Promise.allSettled([
+        item
+          ? Promise.resolve(null)
+          : generateImage({
+              apiKey: runtimeModel.apiKey,
+              baseURL: runtimeModel.baseURL,
+              model: runtimeModel.model,
+              prompt,
+              size: runtimeModel.size,
+              quality: runtimeModel.quality,
+              referenceImage: hasAvatar ? avatarImage : ""
+            }),
+        gifItem
+          ? Promise.resolve(null)
+          : generateActionGifAsset({
+              avatarImage: hasAvatar ? avatarImage : "",
+              runtimeModel,
+              role: meta.role,
+              text
+            })
+      ]);
+
+      if (!item) {
+        if (staticResult.status === "rejected") {
+          throw staticResult.reason;
+        }
+        image = staticResult.value;
+        try {
+          item = await saveGeneratedImage({ image, model: runtimeModel.model, meta, prompt, combo, creatorId: effectiveCreatorId, creatorName, creatorEmailHash });
+        } catch (storageError) {
+          if (!isSuspendedStorageError(storageError)) {
+            throw storageError;
+          }
+          storageWarning = "图库存储暂时被暂停，本次先直接返回图片。";
+          const fallbackImage = await compressImageForMemeDataUrl(image).catch(() => image);
+          item = {
+            id: combo.comboKey,
+            comboKey: combo.comboKey,
+            caption: combo.caption,
+            role: meta.role,
+            roleName: meta.roleName,
+            action: meta.action,
+            actionName: meta.actionName,
+            category: getCategoryForMeta(meta),
+            categoryName: getCategoryName(getCategoryForMeta(meta)),
+            creatorId: effectiveCreatorId,
+            creatorName,
+            imageUrl: fallbackImage,
+            downloadUrl: fallbackImage,
+            thumbnail: fallbackImage,
+            uses: 1
+          };
+        }
+        image = item.imageUrl;
+      }
+
+      if (!gifItem) {
+        if (gifResult.status === "fulfilled") {
+          const gifAsset = gifResult.value;
+          gif = gifAsset.gif;
+          gifFrames = gifAsset.frames;
+          try {
+            gifItem = await saveGeneratedGif({
+              combo: gifDescriptor.combo,
+              creatorId: effectiveCreatorId,
+              creatorName,
+              creatorEmailHash,
+              gif,
+              meta: gifDescriptor.meta,
+              model: runtimeModel.model,
+              prompt: gifAsset.prompt
+            });
+          } catch (gifStorageError) {
+            gifWarning = `GIF 已生成，但入库失败：${gifStorageError?.message || "未知错误"}`;
+          }
+        } else {
+          gifWarning = `静态图已生成，但 GIF 失败：${gifResult.reason?.message || "未知错误"}`;
+        }
+      }
     }
     const category = getCategoryForMeta(meta);
     const quota = await consumeQuota(quotaInput).catch(() => quotaPreview);
+    const warning = [storageWarning, gifWarning].filter(Boolean).join(" ");
     res.status(200).json({
       image: item.imageUrl,
-      cached: false,
+      cached: staticCached,
       comboKey: item.comboKey,
+      gif,
+      gifCached,
+      gifFrames,
+      gifItem: gifItem ? toPublicGalleryItem(gifItem, effectiveCreatorId) : null,
       item: toPublicGalleryItem(item, effectiveCreatorId),
-      meta: {
-        ...meta,
-        category,
-        categoryName: getCategoryName(category)
-      },
+      meta: staticCached ? metaFromItem(item) : { ...meta, category, categoryName: getCategoryName(category) },
       quota,
-      warning: storageWarning
+      warning
     });
   } catch (error) {
     res.status(error?.status || 500).json({ error: error?.message || "Image generation failed", quota: error?.quota });

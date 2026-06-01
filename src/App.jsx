@@ -20,7 +20,7 @@ import {
   Users,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizeWorkplacePackCaptions, pickWorkplacePackCaptions, WORKPLACE_PACK_COUNT } from "../lib/workplacePack.js";
 
 const roles = [
@@ -141,6 +141,7 @@ function Root() {
 }
 
 function App() {
+  const resultRef = useRef(null);
   const [text, setText] = useState("啊？");
   const [role, setRole] = useState("opossum");
   const [viewerId, setViewerId] = useState(() => getOrCreateViewerId());
@@ -172,6 +173,7 @@ function App() {
   const [status, setStatus] = useState("idle");
   const [copyStatus, setCopyStatus] = useState("idle");
   const [gifPreviewUrl, setGifPreviewUrl] = useState("");
+  const [resultMode, setResultMode] = useState("image");
   const [gifStatus, setGifStatus] = useState("idle");
   const [inviteStatus, setInviteStatus] = useState("idle");
   const [shareStatus, setShareStatus] = useState("idle");
@@ -200,9 +202,13 @@ function App() {
   const avatarReady = Boolean(avatarImage?.startsWith?.("data:image/"));
   const currentMood = useMemo(() => moods.find((item) => item.test(text)) || defaultMood, [text]);
   const workplacePackCaptions = useMemo(() => normalizeWorkplacePackCaptions(workplacePackText), [workplacePackText]);
+  const resultAssetUrl = resultMode === "gif" && gifPreviewUrl ? gifPreviewUrl : imageUrl;
+  const resultAssetType = resultMode === "gif" && gifPreviewUrl ? "gif" : "image";
+  const resultAssetLabel = resultAssetType === "gif" ? "GIF" : "PNG";
   const quotaBlocked = Boolean(quota && quota.remaining <= 0);
   const guestAvatarBlocked = Boolean(isAvatarRole && !loggedIn && quota && Number(quota.guestAvatarRemaining || 0) <= 0);
-  const canGenerate = text.trim().length > 0 && status !== "loading" && !quotaBlocked && !guestAvatarBlocked && (!isAvatarRole || avatarReady);
+  const canGenerate =
+    text.trim().length > 0 && status !== "loading" && gifStatus !== "encoding" && !quotaBlocked && !guestAvatarBlocked && (!isAvatarRole || avatarReady);
   const canGenerateWorkplacePack =
     loggedIn && avatarReady && status !== "loading" && workplacePackStatus !== "loading" && !quotaBlocked && workplacePackCaptions.length === WORKPLACE_PACK_COUNT;
   const visibleGallery = useMemo(
@@ -294,6 +300,9 @@ function App() {
       setRole(nextRole);
     }
     setStatus("loading");
+    setGifStatus("encoding");
+    setResultMode("image");
+    setGifPreviewUrl("");
     setError("");
 
     try {
@@ -331,6 +340,14 @@ function App() {
       setCopyStatus("idle");
       setShareStatus("idle");
       setStatus("done");
+      if (data.gif) {
+        setGifPreviewUrl(data.gif);
+        setGifStatus("done");
+        window.setTimeout(() => setGifStatus("idle"), 1400);
+      } else {
+        setGifStatus("idle");
+      }
+      const galleryItems = [];
       if (data.item) {
         const localItem = rememberLocalGalleryItem({
           ...data.item,
@@ -340,23 +357,45 @@ function App() {
           thumbnail: data.item.thumbnail || data.image
         });
         if (localItem) {
-          setGallery((current) => {
-            const nextGallery = mergeGalleryItems([localItem], current);
-            setGalleryCategories(getClientGalleryCategories(nextGallery));
-            return nextGallery;
-          });
-          setGalleryStatus("done");
-          setActiveCategory("all");
+          galleryItems.push(localItem);
         }
+      }
+      if (data.gifItem) {
+        const localGifItem = rememberLocalGalleryItem({
+          ...data.gifItem,
+          creatorName: data.gifItem.creatorName || displayName,
+          downloadUrl: data.gifItem.downloadUrl || data.gif,
+          imageUrl: data.gifItem.imageUrl || data.gif,
+          thumbnail: data.gifItem.thumbnail || data.gif
+        });
+        galleryItems.push(localGifItem || data.gifItem);
+      }
+      if (galleryItems.length) {
+        setGallery((current) => {
+          const nextGallery = mergeGalleryItems(galleryItems, current);
+          setGalleryCategories(getClientGalleryCategories(nextGallery));
+          return nextGallery;
+        });
+        setGalleryStatus("done");
+        setActiveCategory("all");
       }
       if (data.comboKey && !data.cached) {
         publishThumbnail(data.comboKey, data.image);
       } else {
         loadGallery();
       }
+      if (data.warning) {
+        setError(data.warning);
+      }
+      window.requestAnimationFrame(() => {
+        if (window.innerWidth <= 900) {
+          resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
       loadMemeMetrics();
     } catch (err) {
       setStatus("error");
+      setGifStatus("error");
       setError(err instanceof Error ? err.message : "生成失败");
     }
   }
@@ -542,6 +581,8 @@ function App() {
         setActiveCategory("work");
         const first = items[0];
         setImageUrl(first.imageUrl || "");
+        setGifPreviewUrl("");
+        setResultMode("image");
         setMeta({
           action: first.action,
           actionName: first.actionName,
@@ -748,7 +789,7 @@ function App() {
   }
 
   async function copyImage() {
-    if (!imageUrl) {
+    if (!resultAssetUrl) {
       return;
     }
 
@@ -756,17 +797,17 @@ function App() {
     setError("");
 
     try {
-      await copyImageFromUrl(imageUrl);
+      await copyImageFromUrl(resultAssetUrl, resultAssetType === "gif" ? "image/gif" : "image/png");
       setCopyStatus("done");
       window.setTimeout(() => setCopyStatus("idle"), 1400);
     } catch (err) {
       setCopyStatus("error");
-      setError(friendlyImageError(err, "复制失败，可以先分享或下载 PNG。"));
+      setError(friendlyImageError(err, `复制失败，可以先分享或下载 ${resultAssetLabel}。`));
     }
   }
 
   async function shareImage() {
-    if (!imageUrl) {
+    if (!resultAssetUrl) {
       return;
     }
 
@@ -774,8 +815,9 @@ function App() {
     setError("");
 
     try {
-      const blob = await fetchImageBlob(imageUrl);
-      const file = new File([blob], `chuangbian-meme-${Date.now()}.png`, { type: "image/png" });
+      const blob = resultAssetType === "gif" ? await fetchRawImageBlob(resultAssetUrl) : await fetchImageBlob(resultAssetUrl);
+      const fileType = resultAssetType === "gif" ? "image/gif" : "image/png";
+      const file = new File([blob], `chuangbian-meme-${Date.now()}.${resultAssetType === "gif" ? "gif" : "png"}`, { type: fileType });
       if (navigator.canShare?.({ files: [file] }) && navigator.share) {
         await navigator.share({
           title: "窗边 Meme",
@@ -784,13 +826,13 @@ function App() {
         });
         setShareStatus("done");
       } else {
-        await copyImageFromUrl(imageUrl);
+        await copyImageFromUrl(resultAssetUrl, fileType);
         setShareStatus("copied");
       }
       window.setTimeout(() => setShareStatus("idle"), 1400);
     } catch (err) {
       setShareStatus("error");
-      setError(friendlyImageError(err, "分享失败，可以先复制或下载 PNG。"));
+      setError(friendlyImageError(err, `分享失败，可以先复制或下载 ${resultAssetLabel}。`));
     }
   }
 
@@ -829,6 +871,7 @@ function App() {
         throw new Error(data.error || "动作 GIF 生成失败。");
       }
       setGifPreviewUrl(data.gif);
+      setResultMode("gif");
       if (data.quota) {
         setQuota(data.quota);
         syncIdentityFromQuota(data.quota);
@@ -856,6 +899,7 @@ function App() {
     setRole("opossum");
     setText(item.caption);
     setGifPreviewUrl(item.gif);
+    setResultMode("gif");
     setGifStatus("idle");
     setError("");
   }
@@ -1089,15 +1133,28 @@ function App() {
         <div className="action-row">
           <button type="button" className="primary-button" onClick={generateImage} disabled={!canGenerate}>
             {status === "loading" ? <Loader2 className="animate-spin" size={19} /> : <Sparkles size={19} />}
-            {status === "loading" ? "AI 站窗边中" : quotaBlocked ? "额度见底了" : guestAvatarBlocked ? "游客照片用完" : "生成 Meme"}
+            {status === "loading" ? "静图 + GIF 一起站" : quotaBlocked ? "额度见底了" : guestAvatarBlocked ? "游客照片用完" : "生成 Meme + GIF"}
           </button>
           {imageUrl && (
-            <button type="button" className="secondary-button" onClick={generateImage} disabled={status === "loading"}>
+            <button type="button" className="secondary-button" onClick={generateImage} disabled={status === "loading" || gifStatus === "encoding"}>
               <RefreshCw size={18} />
-              重新生成
+              重新生成一套
             </button>
           )}
         </div>
+        {(status === "loading" || gifStatus === "encoding") && (
+          <div className="generation-progress" role="status" aria-live="polite">
+            <div>
+              <span>正在同时开工</span>
+              <strong>先出静图，再把它动起来</strong>
+            </div>
+            <div className="generation-progress-steps">
+              <i className={cn("generation-step", status === "loading" && "generation-step-active")}>静图</i>
+              <i className={cn("generation-step", gifStatus === "encoding" && "generation-step-active")}>GIF</i>
+              <i className="generation-step">入库</i>
+            </div>
+          </div>
+        )}
 
         <section className="quota-card">
           <div>
@@ -1269,7 +1326,7 @@ function App() {
         {error && <div className="error-box">{error}</div>}
       </section>
 
-      <section className="result">
+      <section className="result" ref={resultRef}>
         <div className="result-head">
           <div>
             <p className="result-title">{imageUrl ? meta?.caption || text : "蓝窗预览"}</p>
@@ -1283,6 +1340,23 @@ function App() {
           </div>
           {imageUrl && (
             <div className="result-actions">
+              <div className="result-mode-switch" role="tablist" aria-label="结果类型">
+                <button
+                  type="button"
+                  className={cn(resultMode !== "gif" && "result-mode-active")}
+                  onClick={() => setResultMode("image")}
+                >
+                  静图
+                </button>
+                <button
+                  type="button"
+                  className={cn(resultMode === "gif" && "result-mode-active")}
+                  onClick={() => gifPreviewUrl && setResultMode("gif")}
+                  disabled={!gifPreviewUrl}
+                >
+                  GIF
+                </button>
+              </div>
               <button
                 type="button"
                 className="download-button desktop-image-action"
@@ -1303,12 +1377,12 @@ function App() {
               </button>
               <a
                 className="download-button desktop-image-action"
-                href={imageUrl}
-                download={`chuangbian-${Date.now()}.png`}
-                title="下载 PNG"
+                href={resultAssetUrl}
+                download={`chuangbian-${Date.now()}.${resultAssetType === "gif" ? "gif" : "png"}`}
+                title={`下载 ${resultAssetLabel}`}
               >
                 <Download size={18} />
-                PNG
+                {resultAssetLabel}
               </a>
               <button
                 type="button"
@@ -1318,16 +1392,21 @@ function App() {
                 title="下载动作 GIF"
               >
                 {gifStatus === "encoding" ? <Loader2 className="animate-spin" size={18} /> : <Film size={18} />}
-                {gifStatus === "done" ? "已出 GIF" : "动作 GIF"}
+                {gifStatus === "done" ? "已出 GIF" : "补 GIF"}
               </button>
-              <div className="mobile-save-hint">长按图片保存或转发</div>
+              <div className="mobile-save-hint">长按当前{resultAssetLabel}保存或转发</div>
             </div>
           )}
         </div>
 
         <div className="image-stage">
-          {imageUrl ? (
-            <img src={imageUrl} alt="生成的窗边表情包" />
+          {resultAssetUrl ? (
+            <img src={resultAssetUrl} alt={resultAssetType === "gif" ? "生成的窗边 GIF" : "生成的窗边表情包"} />
+          ) : status === "loading" ? (
+            <div className="empty-window empty-window-loading">
+              <Loader2 className="animate-spin" size={44} />
+              <span>正在把人送去窗边</span>
+            </div>
           ) : (
             <div className="empty-window">
               <ImageIcon size={44} />
@@ -1355,11 +1434,11 @@ function App() {
             <img src={gifPreviewUrl} alt="窗边 GIF demo 预览" />
             <div>
               <strong>动作 GIF 已生成</strong>
-              <span>生成后会进 GIF 库，随手复制或下载。</span>
+              <span>点上方 GIF 可直接预览；也会进 GIF 库。</span>
             </div>
-            <a href={gifPreviewUrl} download={`chuangbian-demo-${Date.now()}.gif`}>
-              再下 GIF
-            </a>
+            <button type="button" onClick={() => setResultMode("gif")}>
+              看 GIF
+            </button>
           </div>
         )}
       </section>
