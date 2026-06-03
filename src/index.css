@@ -357,6 +357,26 @@ button:disabled {
   color: #4338ca;
 }
 
+.lazy-meme-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-color: rgba(15, 23, 42, 0.18);
+  background:
+    linear-gradient(135deg, #0f172a 0%, #1d4ed8 52%, #22d3ee 100%),
+    #0f172a;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+}
+
+.lazy-meme-chip:hover {
+  border-color: rgba(190, 242, 100, 0.7);
+  background:
+    linear-gradient(135deg, #111827 0%, #2563eb 48%, #bef264 100%),
+    #111827;
+  color: #ffffff;
+}
+
 .example-chip:hover,
 .category-tab:hover,
 .gallery-refresh:hover,

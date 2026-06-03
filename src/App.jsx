@@ -57,6 +57,21 @@ const examplePool = [
   "人类效率真低"
 ];
 
+const lazyMemePacks = [
+  { text: "啊？你再说一遍", role: "opossum" },
+  { text: "客户说就微调一下", role: "worker" },
+  { text: "老板你睡了吗", role: "boss" },
+  { text: "钱没有 爱也没有", role: "opossum" },
+  { text: "消息已读但不回", role: "glasses-man" },
+  { text: "人类效率真低", role: "ai" },
+  { text: "你要不要看看你在说什么", role: "glasses-man" },
+  { text: "今天先活着", role: "worker" },
+  { text: "这合理吗？", role: "opossum" },
+  { text: "方案呢？", role: "boss" },
+  { text: "我先站会儿", role: "worker" },
+  { text: "别问 问就是没钱", role: "opossum" }
+];
+
 const exampleCount = 6;
 const localGalleryKey = "chuangbian-local-gallery";
 const localGalleryLimit = 18;
@@ -408,6 +423,15 @@ function App() {
 
   function rerollExamples() {
     setVisibleExamples(pickExamples(text));
+  }
+
+  function remixLazyMeme() {
+    const next = pickLazyMeme(text, role);
+    setText(next.text.slice(0, 42));
+    setRole(next.role);
+    setVisibleExamples(pickExamples(next.text));
+    setResultMode("image");
+    setError("");
   }
 
   function focusLoginForm() {
@@ -1098,6 +1122,10 @@ function App() {
             placeholder="比如：客户说就微调一下"
           />
           <div className="example-row">
+            <button type="button" className="example-chip lazy-meme-chip" onClick={remixLazyMeme}>
+              <Sparkles size={13} />
+              帮我发疯
+            </button>
             {visibleExamples.map((example) => (
               <button key={example} type="button" className="example-chip" onClick={() => useExample(example)}>
                 {example}
@@ -2230,6 +2258,12 @@ function pickExamples(exclude = "") {
   const candidates = examplePool.filter((item) => item !== exclude);
   const shuffled = [...candidates].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, exampleCount);
+}
+
+function pickLazyMeme(currentText = "", currentRole = "") {
+  const candidates = lazyMemePacks.filter((item) => item.text !== currentText || item.role !== currentRole);
+  const pool = candidates.length ? candidates : lazyMemePacks;
+  return pool[Math.floor(Math.random() * pool.length)] || lazyMemePacks[0];
 }
 
 function createThumbnail(src) {
