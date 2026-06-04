@@ -120,8 +120,7 @@ button:disabled {
 .result,
 .gallery-panel,
 .identity-panel,
-.flow-card,
-.rail-card {
+.flow-card {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -168,8 +167,7 @@ button:disabled {
   text-align: left;
 }
 
-.flow-card,
-.rail-card {
+.flow-card {
   display: grid;
   gap: 10px;
   padding: 13px;
@@ -186,15 +184,13 @@ button:disabled {
   gap: 3px;
 }
 
-.flow-head span,
-.rail-card span {
+.flow-head span {
   color: var(--muted);
   font-size: 12px;
   font-weight: 950;
 }
 
-.flow-head strong,
-.rail-card strong {
+.flow-head strong {
   color: var(--ink);
   font-size: 18px;
   font-weight: 1000;
@@ -248,21 +244,6 @@ button:disabled {
   line-height: 1.32;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.rail-card {
-  border-color: rgba(251, 113, 133, 0.2);
-  background:
-    linear-gradient(135deg, rgba(255, 241, 242, 0.88), rgba(255, 255, 255, 0.82)),
-    rgba(255, 255, 255, 0.76);
-}
-
-.rail-card p {
-  margin: 0;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 850;
-  line-height: 1.55;
 }
 
 .live-board div {
@@ -2453,8 +2434,7 @@ button:disabled {
 
   .status-rail .live-board,
   .status-rail .quota-card,
-  .status-rail .flow-card,
-  .status-rail .rail-card {
+  .status-rail .flow-card {
     height: 100%;
   }
 
@@ -2567,8 +2547,7 @@ button:disabled {
   .gallery-panel,
   .wish-wall-panel,
   .identity-panel,
-  .flow-card,
-  .rail-card {
+  .flow-card {
     padding: 12px;
   }
 

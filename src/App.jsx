@@ -1352,11 +1352,6 @@ function App() {
             </button>
           </section>
 
-          <section className="rail-card output-card" aria-label="输出说明">
-            <span>输出策略</span>
-            <strong>低清快出图</strong>
-            <p>表情包不用端着，够像原图、够快、够好复制才是正经事。</p>
-          </section>
         </aside>
       </section>
 
