@@ -620,28 +620,30 @@ button:disabled {
   color: #bef264;
 }
 
-.passport-card {
+.identity-account-card {
   display: grid;
   gap: 10px;
+  min-width: 0;
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(245, 243, 255, 0.92), rgba(236, 254, 255, 0.82)),
     rgba(255, 255, 255, 0.7);
+  box-shadow: 0 18px 56px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(18px);
   padding: 12px;
 }
 
 .identity-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
+  align-items: start;
+  gap: 12px;
   width: 100%;
 }
 
 .identity-panel .passport-actions {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
-
-.identity-panel .name-input,
-.identity-panel .email-input {
-  grid-column: span 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .identity-panel .upload-button,
@@ -651,8 +653,11 @@ button:disabled {
 }
 
 .identity-panel .workplace-pack-card {
-  width: min(100%, 460px);
-  justify-self: end;
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+  box-shadow: 0 18px 56px rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(18px);
 }
 
 .identity-panel .workplace-pack-sample-grid,
@@ -661,14 +666,14 @@ button:disabled {
   justify-self: center;
 }
 
-.passport-ready {
+.identity-panel-ready .identity-account-card {
   border-color: rgba(190, 242, 100, 0.85);
   background:
     linear-gradient(135deg, rgba(247, 254, 231, 0.94), rgba(236, 254, 255, 0.84)),
     #ffffff;
 }
 
-.passport-dragging {
+.identity-panel-dragging .identity-account-card {
   border-color: rgba(34, 211, 238, 0.95);
   background:
     linear-gradient(135deg, rgba(236, 254, 255, 0.98), rgba(240, 253, 250, 0.92)),
@@ -2492,18 +2497,8 @@ button:disabled {
     position: static;
   }
 
-  .identity-panel .passport-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .identity-panel .name-input,
-  .identity-panel .email-input {
-    grid-column: auto;
-  }
-
-  .identity-panel .workplace-pack-card {
-    justify-self: stretch;
-    width: 100%;
+  .identity-panel {
+    grid-template-columns: 1fr;
   }
 
   .result-title {
@@ -2562,7 +2557,6 @@ button:disabled {
   .result,
   .gallery-panel,
   .wish-wall-panel,
-  .identity-panel,
   .flow-card {
     padding: 12px;
   }

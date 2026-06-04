@@ -1356,77 +1356,91 @@ function App() {
       </section>
 
       <section
-        className={cn("passport-card identity-panel", (loggedIn || avatarReady) && "passport-ready", avatarDragActive && "passport-dragging")}
+        className={cn("identity-panel", (loggedIn || avatarReady) && "identity-panel-ready", avatarDragActive && "identity-panel-dragging")}
         onDragEnter={handleAvatarDrag}
         onDragLeave={handleAvatarDrag}
         onDragOver={handleAvatarDrag}
         onDrop={handleAvatarDrop}
       >
-        <div className="passport-head">
-          <div className="avatar-preview">
-            {avatarPreview ? <img src={avatarPreview} alt="已上传头像" /> : <UserRound size={24} />}
+        <div className="identity-account-card">
+          <div className="passport-head">
+            <div className="avatar-preview">
+              {avatarPreview ? <img src={avatarPreview} alt="已上传头像" /> : <UserRound size={24} />}
+            </div>
+            <div>
+              <span>{loggedIn ? "已登录，形象可保存" : "游客可试 1 次自己的照片"}</span>
+              <strong>{avatarReady ? `${displayName} 的窗边替身` : "拖照片到这里，或点上传"}</strong>
+            </div>
+            {loggedIn && (
+              <button type="button" className="passport-logout" onClick={logoutProfile}>
+                退出
+              </button>
+            )}
           </div>
-          <div>
-            <span>{loggedIn ? "已登录，形象可保存" : "游客可试 1 次自己的照片"}</span>
-            <strong>{avatarReady ? `${displayName} 的窗边替身` : "拖照片到这里，或点上传"}</strong>
+          <div className="passport-actions">
+            <input
+              id="profile-name"
+              value={profileName}
+              onChange={(event) => setProfileName(event.target.value.slice(0, 18))}
+              className="name-input"
+              placeholder="昵称"
+              aria-label="昵称"
+              disabled={loggedIn}
+            />
+            <input
+              id="profile-email"
+              value={profileEmail}
+              onChange={(event) => setProfileEmail(event.target.value.slice(0, 120))}
+              className="email-input"
+              placeholder="邮箱"
+              aria-label="邮箱"
+              inputMode="email"
+              disabled={loggedIn}
+            />
+            <label className="upload-button">
+              <Upload size={15} />
+              {avatarReady ? "换个形象" : "上传/拖照片"}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
+            </label>
+            {!loggedIn ? (
+              <>
+                <button type="button" className="auth-button" onClick={sendLoginCode} disabled={authStatus === "sending"}>
+                  {authStatus === "sending" ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
+                  发验证码
+                </button>
+                <input
+                  value={loginCode}
+                  onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="code-input"
+                  placeholder="验证码"
+                  aria-label="验证码"
+                  inputMode="numeric"
+                />
+                <button type="button" className="auth-button auth-button-dark" onClick={verifyLogin} disabled={authStatus === "verifying"}>
+                  {authStatus === "verifying" ? <Loader2 className="animate-spin" size={15} /> : <LockKeyhole size={15} />}
+                  验证登录
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
+                  <Sparkles size={15} />
+                  生成九宫格
+                </button>
+              </>
+            )}
           </div>
-          {loggedIn && (
-            <button type="button" className="passport-logout" onClick={logoutProfile}>
-              退出
-            </button>
+          {authMessage && <small className="auth-note">{authMessage}</small>}
+          {!loggedIn && (
+            <small className="auth-note">游客可用自己的照片生成 1 次；登录后可保存形象并继续生成职场包。</small>
           )}
-        </div>
-        <div className="passport-actions">
-          <input
-            id="profile-name"
-            value={profileName}
-            onChange={(event) => setProfileName(event.target.value.slice(0, 18))}
-            className="name-input"
-            placeholder="昵称"
-            aria-label="昵称"
-            disabled={loggedIn}
-          />
-          <input
-            id="profile-email"
-            value={profileEmail}
-            onChange={(event) => setProfileEmail(event.target.value.slice(0, 120))}
-            className="email-input"
-            placeholder="邮箱"
-            aria-label="邮箱"
-            inputMode="email"
-            disabled={loggedIn}
-          />
-          <label className="upload-button">
-            <Upload size={15} />
-            {avatarReady ? "换个形象" : "上传/拖照片"}
-            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
-          </label>
-          {!loggedIn ? (
-            <>
-              <button type="button" className="auth-button" onClick={sendLoginCode} disabled={authStatus === "sending"}>
-                {authStatus === "sending" ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
-                发验证码
-              </button>
-              <input
-                value={loginCode}
-                onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="code-input"
-                placeholder="验证码"
-                aria-label="验证码"
-                inputMode="numeric"
-              />
-              <button type="button" className="auth-button auth-button-dark" onClick={verifyLogin} disabled={authStatus === "verifying"}>
-                {authStatus === "verifying" ? <Loader2 className="animate-spin" size={15} /> : <LockKeyhole size={15} />}
-                验证登录
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
-                <Sparkles size={15} />
-                生成九宫格
-              </button>
-            </>
+          {loggedIn && !avatarReady && (
+            <small className="auth-note">已登录。现在传一张正脸或半身照，AI 会做成拟人 3D 窗边替身，不走漫画风。</small>
+          )}
+          {profileSyncStatus !== "idle" && (
+            <small className={cn("profile-sync-note", profileSyncStatus === "error" && "profile-sync-note-error")}>
+              {profileSyncStatus === "saving" ? "后台正在收录你的形象" : profileSyncStatus === "done" ? "后台已收录，别后悔" : "后台刚才手滑了"}
+            </small>
           )}
         </div>
         {!loggedIn && (
@@ -1489,18 +1503,6 @@ function App() {
               </div>
             )}
           </section>
-        )}
-        {authMessage && <small className="auth-note">{authMessage}</small>}
-        {!loggedIn && (
-          <small className="auth-note">游客可用自己的照片生成 1 次；登录后可保存形象并继续生成职场包。</small>
-        )}
-        {loggedIn && !avatarReady && (
-          <small className="auth-note">已登录。现在传一张正脸或半身照，AI 会做成拟人 3D 窗边替身，不走漫画风。</small>
-        )}
-        {profileSyncStatus !== "idle" && (
-          <small className={cn("profile-sync-note", profileSyncStatus === "error" && "profile-sync-note-error")}>
-            {profileSyncStatus === "saving" ? "后台正在收录你的形象" : profileSyncStatus === "done" ? "后台已收录，别后悔" : "后台刚才手滑了"}
-          </small>
         )}
       </section>
 
