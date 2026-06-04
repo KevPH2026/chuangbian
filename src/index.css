@@ -650,6 +650,17 @@ button:disabled {
   min-width: 0;
 }
 
+.identity-panel .workplace-pack-card {
+  width: min(100%, 460px);
+  justify-self: end;
+}
+
+.identity-panel .workplace-pack-sample-grid,
+.identity-panel .workplace-pack-grid {
+  width: min(100%, 420px);
+  justify-self: center;
+}
+
 .passport-ready {
   border-color: rgba(190, 242, 100, 0.85);
   background:
@@ -2488,6 +2499,11 @@ button:disabled {
   .identity-panel .name-input,
   .identity-panel .email-input {
     grid-column: auto;
+  }
+
+  .identity-panel .workplace-pack-card {
+    justify-self: stretch;
+    width: 100%;
   }
 
   .result-title {
