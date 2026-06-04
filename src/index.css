@@ -90,21 +90,38 @@ button:disabled {
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(300px, 400px) minmax(0, 420px);
+  grid-template-columns: 1fr;
   align-items: start;
   justify-content: center;
   gap: 14px;
-  width: min(1020px, calc(100vw - 24px));
+  width: min(1180px, calc(100vw - 24px));
   min-height: 100vh;
   margin: 0 auto;
   padding: 14px 0 24px;
+}
+
+.studio-shell {
+  display: grid;
+  grid-template-columns: minmax(300px, 370px) minmax(330px, 430px) minmax(244px, 300px);
+  align-items: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.studio-shell > .creator,
+.studio-shell > .result,
+.studio-shell > .status-rail {
+  min-width: 0;
 }
 
 .hero-strip,
 .live-board,
 .creator,
 .result,
-.gallery-panel {
+.gallery-panel,
+.identity-panel,
+.flow-card,
+.rail-card {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -124,6 +141,128 @@ button:disabled {
     linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 64, 175, 0.86), rgba(34, 211, 238, 0.74)),
     #0f172a;
   color: #f8fafc;
+}
+
+.status-rail {
+  position: sticky;
+  top: 14px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.status-rail .live-board {
+  grid-column: auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 13px;
+}
+
+.status-rail .live-board b {
+  justify-self: end;
+  font-size: clamp(38px, 5vw, 56px);
+}
+
+.status-rail .live-board p {
+  grid-column: 1 / -1;
+  min-width: 0;
+  text-align: left;
+}
+
+.flow-card,
+.rail-card {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+}
+
+.flow-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(236, 254, 255, 0.86), rgba(247, 254, 231, 0.74)),
+    rgba(255, 255, 255, 0.82);
+}
+
+.flow-head {
+  display: grid;
+  gap: 3px;
+}
+
+.flow-head span,
+.rail-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.flow-head strong,
+.rail-card strong {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1.1;
+}
+
+.flow-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 9px;
+}
+
+.flow-item b {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #bef264;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.flow-item div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.flow-item strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 1000;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-item span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.32;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-card {
+  border-color: rgba(251, 113, 133, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 241, 242, 0.88), rgba(255, 255, 255, 0.82)),
+    rgba(255, 255, 255, 0.76);
+}
+
+.rail-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.55;
 }
 
 .live-board div {
@@ -509,6 +648,25 @@ button:disabled {
     linear-gradient(135deg, rgba(245, 243, 255, 0.92), rgba(236, 254, 255, 0.82)),
     rgba(255, 255, 255, 0.7);
   padding: 12px;
+}
+
+.identity-panel {
+  width: 100%;
+}
+
+.identity-panel .passport-actions {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.identity-panel .name-input,
+.identity-panel .email-input {
+  grid-column: span 2;
+}
+
+.identity-panel .upload-button,
+.identity-panel .auth-button,
+.identity-panel .code-input {
+  min-width: 0;
 }
 
 .passport-ready {
@@ -2278,11 +2436,46 @@ button:disabled {
   font-weight: 1000;
 }
 
+@media (max-width: 1040px) {
+  .app-shell {
+    width: min(860px, calc(100vw - 20px));
+  }
+
+  .studio-shell {
+    grid-template-columns: minmax(300px, 1fr) minmax(320px, 430px);
+  }
+
+  .status-rail {
+    position: static;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .status-rail .live-board,
+  .status-rail .quota-card,
+  .status-rail .flow-card,
+  .status-rail .rail-card {
+    height: 100%;
+  }
+
+  .status-rail .quota-card {
+    align-content: start;
+  }
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
     width: min(100vw - 20px, 640px);
     padding: 10px 0 18px;
+  }
+
+  .studio-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .status-rail {
+    grid-template-columns: 1fr;
   }
 
   .hero-strip {
@@ -2306,6 +2499,15 @@ button:disabled {
 
   .result {
     position: static;
+  }
+
+  .identity-panel .passport-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .identity-panel .name-input,
+  .identity-panel .email-input {
+    grid-column: auto;
   }
 
   .result-title {
@@ -2354,12 +2556,19 @@ button:disabled {
     padding-top: 7px;
   }
 
+  .studio-shell {
+    gap: 9px;
+  }
+
   .hero-strip,
   .live-board,
   .creator,
   .result,
   .gallery-panel,
-  .wish-wall-panel {
+  .wish-wall-panel,
+  .identity-panel,
+  .flow-card,
+  .rail-card {
     padding: 12px;
   }
 
@@ -2382,7 +2591,22 @@ button:disabled {
   }
 
   .role-zone {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    gap: 8px;
+    margin-right: -12px;
+    margin-left: -12px;
+    overflow-x: auto;
+    padding: 0 12px 2px;
+    scrollbar-width: none;
+  }
+
+  .role-zone::-webkit-scrollbar {
+    display: none;
+  }
+
+  .role-card {
+    flex: 0 0 152px;
+    min-height: 62px;
   }
 
   .passport-actions,
@@ -2391,6 +2615,10 @@ button:disabled {
     align-items: stretch;
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .identity-panel .passport-actions {
+    grid-template-columns: 1fr;
   }
 
   .quota-card small {

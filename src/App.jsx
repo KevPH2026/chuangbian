@@ -1090,19 +1090,8 @@ function App() {
         </div>
       </section>
 
-      <section className="live-board" aria-label="今日 Meme 人数">
-        <div>
-          <span className="live-dot">LIVE</span>
-          <strong>今日 Meme 人数</strong>
-          <small>{metricsStatus === "error" ? "看板短暂离线，精神状态仍在线" : "5 分钟跳一次，看起来非常忙"}</small>
-        </div>
-        <b>{memeMetrics ? memeMetrics.visibleUv : "78"}</b>
-        <p>
-          今日访问 UV · {memeMetrics?.hits ? `围观 ${memeMetrics.hits} 次` : "正在蹲窗边"}
-        </p>
-      </section>
-
-      <section className="creator">
+      <section className="studio-shell" aria-label="窗边生成工作台">
+        <section className="creator">
         <div className="panel-title">
           <div>
             <span>说一句，AI 去站窗边</span>
@@ -1183,173 +1172,6 @@ function App() {
             </div>
           </div>
         )}
-
-        <section className="quota-card">
-          <div>
-            <span>{quota?.registered ? "注册额度" : "游客额度"}</span>
-            <strong>{quota ? `还剩 ${quota.remaining}/${quota.limit} 张` : "额度读取中"}</strong>
-          </div>
-          <small>
-            {quota?.bonus
-              ? `已拉 ${quota.invitedCount} 个受害者，续了 ${quota.bonus} 张`
-              : loggedIn
-                ? "已登录，可继续管理自己的形象"
-                : `游客照片还剩 ${quota?.guestAvatarRemaining ?? 1}/1 次；转发 +5`}
-          </small>
-          <button type="button" className="invite-button" onClick={shareInvite}>
-            <Share2 size={14} />
-            {inviteStatus === "done" ? "已转发" : inviteStatus === "copied" ? "已复制" : "转发续命"}
-          </button>
-        </section>
-
-        <section
-          className={cn("passport-card", (loggedIn || avatarReady) && "passport-ready", avatarDragActive && "passport-dragging")}
-          onDragEnter={handleAvatarDrag}
-          onDragLeave={handleAvatarDrag}
-          onDragOver={handleAvatarDrag}
-          onDrop={handleAvatarDrop}
-        >
-          <div className="passport-head">
-            <div className="avatar-preview">
-              {avatarPreview ? <img src={avatarPreview} alt="已上传头像" /> : <UserRound size={24} />}
-            </div>
-            <div>
-              <span>{loggedIn ? "已登录，形象可保存" : "游客可试 1 次自己的照片"}</span>
-              <strong>{avatarReady ? `${displayName} 的窗边替身` : "拖照片到这里，或点上传"}</strong>
-            </div>
-            {loggedIn && (
-              <button type="button" className="passport-logout" onClick={logoutProfile}>
-                退出
-              </button>
-            )}
-          </div>
-          <div className="passport-actions">
-            <input
-              id="profile-name"
-              value={profileName}
-              onChange={(event) => setProfileName(event.target.value.slice(0, 18))}
-              className="name-input"
-              placeholder="昵称"
-              aria-label="昵称"
-              disabled={loggedIn}
-            />
-            <input
-              id="profile-email"
-              value={profileEmail}
-              onChange={(event) => setProfileEmail(event.target.value.slice(0, 120))}
-              className="email-input"
-              placeholder="邮箱"
-              aria-label="邮箱"
-              inputMode="email"
-              disabled={loggedIn}
-            />
-            <label className="upload-button">
-              <Upload size={15} />
-              {avatarReady ? "换个形象" : "上传/拖照片"}
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
-            </label>
-            {!loggedIn ? (
-              <>
-                <button type="button" className="auth-button" onClick={sendLoginCode} disabled={authStatus === "sending"}>
-                  {authStatus === "sending" ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
-                  发验证码
-                </button>
-                <input
-                  value={loginCode}
-                  onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="code-input"
-                  placeholder="验证码"
-                  aria-label="验证码"
-                  inputMode="numeric"
-                />
-                <button type="button" className="auth-button auth-button-dark" onClick={verifyLogin} disabled={authStatus === "verifying"}>
-                  {authStatus === "verifying" ? <Loader2 className="animate-spin" size={15} /> : <LockKeyhole size={15} />}
-                  验证登录
-                </button>
-              </>
-            ) : (
-              <>
-                <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
-                  <Sparkles size={15} />
-                  生成九宫格
-                </button>
-              </>
-            )}
-          </div>
-          {!loggedIn && (
-            <section className="workplace-pack-card workplace-pack-locked" aria-label="职场九宫格介绍">
-              <div className="workplace-pack-head">
-                <div>
-                  <span>登录解锁</span>
-                  <strong>职场九宫格：一次生成 9 张</strong>
-                </div>
-                <div className="workplace-pack-head-actions">
-                  <button type="button" onClick={downloadDemoGif} disabled={gifStatus === "encoding"}>
-                    {gifStatus === "encoding" ? <Loader2 className="animate-spin" size={13} /> : <Film size={13} />}
-                    动作 GIF
-                  </button>
-                  <button type="button" onClick={focusLoginForm}>
-                    <LockKeyhole size={13} />
-                    去登录
-                  </button>
-                </div>
-              </div>
-              <p className="workplace-pack-copy">用自己的形象，一次生成同一风格的 3x3 职场表情包；系统会自动切成 9 张单图，方便直接复制走。</p>
-              <div className="workplace-pack-sample-grid" aria-label="职场九宫格真实效果图">
-                {workplacePackSampleImages.map((src, index) => (
-                  <img key={src} src={src} alt={`职场窗边 Meme 样例 ${index + 1}`} loading="lazy" />
-                ))}
-              </div>
-            </section>
-          )}
-          {loggedIn && (
-            <section className="workplace-pack-card" aria-label="职场九宫格">
-              <div className="workplace-pack-head">
-                <div>
-                  <span>职场九宫格</span>
-                  <strong>一次生成 9 张，同一风格，自动切图</strong>
-                </div>
-                <button type="button" onClick={rerollWorkplacePack} disabled={workplacePackStatus === "loading"}>
-                  <RefreshCw size={13} />
-                  摇骰子
-                </button>
-              </div>
-              <textarea
-                value={workplacePackText}
-                onChange={(event) => setWorkplacePackText(event.target.value.slice(0, 260))}
-                className="workplace-pack-input"
-                rows={9}
-                placeholder="一行一句，正好 9 句"
-              />
-              <div className="workplace-pack-foot">
-                <span>{workplacePackCaptions.length}/{WORKPLACE_PACK_COUNT} 句</span>
-                <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={!canGenerateWorkplacePack}>
-                  {workplacePackStatus === "loading" ? <Loader2 className="animate-spin" size={15} /> : <Sparkles size={15} />}
-                  {workplacePackStatus === "loading" ? "生成中" : "生成 9 张"}
-                </button>
-              </div>
-              {workplacePackItems.length > 0 && (
-                <div className="workplace-pack-grid">
-                  {workplacePackItems.map((item) => (
-                    <img key={item.comboKey || item.id} src={item.thumbnail || item.imageUrl} alt={item.caption || "职场包"} loading="lazy" />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-          {authMessage && <small className="auth-note">{authMessage}</small>}
-          {!loggedIn && (
-            <small className="auth-note">游客可用自己的照片生成 1 次；登录后可保存形象并继续生成职场包。</small>
-          )}
-          {loggedIn && !avatarReady && (
-            <small className="auth-note">已登录。现在传一张正脸或半身照，AI 会做成拟人 3D 窗边替身，不走漫画风。</small>
-          )}
-          {profileSyncStatus !== "idle" && (
-            <small className={cn("profile-sync-note", profileSyncStatus === "error" && "profile-sync-note-error")}>
-              {profileSyncStatus === "saving" ? "后台正在收录你的形象" : profileSyncStatus === "done" ? "后台已收录，别后悔" : "后台刚才手滑了"}
-            </small>
-          )}
-        </section>
 
         {error && <div className="error-box">{error}</div>}
       </section>
@@ -1468,6 +1290,222 @@ function App() {
               看 GIF
             </button>
           </div>
+        )}
+      </section>
+
+        <aside className="status-rail" aria-label="今日状态和权益">
+          <section className="live-board" aria-label="今日 Meme 人数">
+            <div>
+              <span className="live-dot">LIVE</span>
+              <strong>今日 Meme 人数</strong>
+              <small>{metricsStatus === "error" ? "看板短暂离线，精神状态仍在线" : "5 分钟跳一次，看起来非常忙"}</small>
+            </div>
+            <b>{memeMetrics ? memeMetrics.visibleUv : "78"}</b>
+            <p>
+              今日访问 UV · {memeMetrics?.hits ? `围观 ${memeMetrics.hits} 次` : "正在蹲窗边"}
+            </p>
+          </section>
+
+          <section className="flow-card" aria-label="生成流程">
+            <div className="flow-head">
+              <span>AI 代站流程</span>
+              <strong>三步把人送去窗边</strong>
+            </div>
+            <div className="flow-item">
+              <b>01</b>
+              <div>
+                <strong>输入一句</strong>
+                <span>别铺垫，越短越有病。</span>
+              </div>
+            </div>
+            <div className="flow-item">
+              <b>02</b>
+              <div>
+                <strong>AI 判动作</strong>
+                <span>疑问就拧头，认命就看窗。</span>
+              </div>
+            </div>
+            <div className="flow-item">
+              <b>03</b>
+              <div>
+                <strong>静图 + GIF</strong>
+                <span>糊点快点，方便偷走。</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="quota-card">
+            <div>
+              <span>{quota?.registered ? "注册额度" : "游客额度"}</span>
+              <strong>{quota ? `还剩 ${quota.remaining}/${quota.limit} 张` : "额度读取中"}</strong>
+            </div>
+            <small>
+              {quota?.bonus
+                ? `已拉 ${quota.invitedCount} 个受害者，续了 ${quota.bonus} 张`
+                : loggedIn
+                  ? "已登录，可继续管理自己的形象"
+                  : `游客照片还剩 ${quota?.guestAvatarRemaining ?? 1}/1 次；转发 +5`}
+            </small>
+            <button type="button" className="invite-button" onClick={shareInvite}>
+              <Share2 size={14} />
+              {inviteStatus === "done" ? "已转发" : inviteStatus === "copied" ? "已复制" : "转发续命"}
+            </button>
+          </section>
+
+          <section className="rail-card output-card" aria-label="输出说明">
+            <span>输出策略</span>
+            <strong>低清快出图</strong>
+            <p>表情包不用端着，够像原图、够快、够好复制才是正经事。</p>
+          </section>
+        </aside>
+      </section>
+
+      <section
+        className={cn("passport-card identity-panel", (loggedIn || avatarReady) && "passport-ready", avatarDragActive && "passport-dragging")}
+        onDragEnter={handleAvatarDrag}
+        onDragLeave={handleAvatarDrag}
+        onDragOver={handleAvatarDrag}
+        onDrop={handleAvatarDrop}
+      >
+        <div className="passport-head">
+          <div className="avatar-preview">
+            {avatarPreview ? <img src={avatarPreview} alt="已上传头像" /> : <UserRound size={24} />}
+          </div>
+          <div>
+            <span>{loggedIn ? "已登录，形象可保存" : "游客可试 1 次自己的照片"}</span>
+            <strong>{avatarReady ? `${displayName} 的窗边替身` : "拖照片到这里，或点上传"}</strong>
+          </div>
+          {loggedIn && (
+            <button type="button" className="passport-logout" onClick={logoutProfile}>
+              退出
+            </button>
+          )}
+        </div>
+        <div className="passport-actions">
+          <input
+            id="profile-name"
+            value={profileName}
+            onChange={(event) => setProfileName(event.target.value.slice(0, 18))}
+            className="name-input"
+            placeholder="昵称"
+            aria-label="昵称"
+            disabled={loggedIn}
+          />
+          <input
+            id="profile-email"
+            value={profileEmail}
+            onChange={(event) => setProfileEmail(event.target.value.slice(0, 120))}
+            className="email-input"
+            placeholder="邮箱"
+            aria-label="邮箱"
+            inputMode="email"
+            disabled={loggedIn}
+          />
+          <label className="upload-button">
+            <Upload size={15} />
+            {avatarReady ? "换个形象" : "上传/拖照片"}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatarUpload} />
+          </label>
+          {!loggedIn ? (
+            <>
+              <button type="button" className="auth-button" onClick={sendLoginCode} disabled={authStatus === "sending"}>
+                {authStatus === "sending" ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />}
+                发验证码
+              </button>
+              <input
+                value={loginCode}
+                onChange={(event) => setLoginCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="code-input"
+                placeholder="验证码"
+                aria-label="验证码"
+                inputMode="numeric"
+              />
+              <button type="button" className="auth-button auth-button-dark" onClick={verifyLogin} disabled={authStatus === "verifying"}>
+                {authStatus === "verifying" ? <Loader2 className="animate-spin" size={15} /> : <LockKeyhole size={15} />}
+                验证登录
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={status === "loading" || !avatarReady}>
+                <Sparkles size={15} />
+                生成九宫格
+              </button>
+            </>
+          )}
+        </div>
+        {!loggedIn && (
+          <section className="workplace-pack-card workplace-pack-locked" aria-label="职场九宫格介绍">
+            <div className="workplace-pack-head">
+              <div>
+                <span>登录解锁</span>
+                <strong>职场九宫格：一次生成 9 张</strong>
+              </div>
+              <div className="workplace-pack-head-actions">
+                <button type="button" onClick={downloadDemoGif} disabled={gifStatus === "encoding"}>
+                  {gifStatus === "encoding" ? <Loader2 className="animate-spin" size={13} /> : <Film size={13} />}
+                  动作 GIF
+                </button>
+                <button type="button" onClick={focusLoginForm}>
+                  <LockKeyhole size={13} />
+                  去登录
+                </button>
+              </div>
+            </div>
+            <p className="workplace-pack-copy">用自己的形象，一次生成同一风格的 3x3 职场表情包；系统会自动切成 9 张单图，方便直接复制走。</p>
+            <div className="workplace-pack-sample-grid" aria-label="职场九宫格真实效果图">
+              {workplacePackSampleImages.map((src, index) => (
+                <img key={src} src={src} alt={`职场窗边 Meme 样例 ${index + 1}`} loading="lazy" />
+              ))}
+            </div>
+          </section>
+        )}
+        {loggedIn && (
+          <section className="workplace-pack-card" aria-label="职场九宫格">
+            <div className="workplace-pack-head">
+              <div>
+                <span>职场九宫格</span>
+                <strong>一次生成 9 张，同一风格，自动切图</strong>
+              </div>
+              <button type="button" onClick={rerollWorkplacePack} disabled={workplacePackStatus === "loading"}>
+                <RefreshCw size={13} />
+                摇骰子
+              </button>
+            </div>
+            <textarea
+              value={workplacePackText}
+              onChange={(event) => setWorkplacePackText(event.target.value.slice(0, 260))}
+              className="workplace-pack-input"
+              rows={9}
+              placeholder="一行一句，正好 9 句"
+            />
+            <div className="workplace-pack-foot">
+              <span>{workplacePackCaptions.length}/{WORKPLACE_PACK_COUNT} 句</span>
+              <button type="button" className="auth-button auth-button-dark" onClick={generateWorkplacePack} disabled={!canGenerateWorkplacePack}>
+                {workplacePackStatus === "loading" ? <Loader2 className="animate-spin" size={15} /> : <Sparkles size={15} />}
+                {workplacePackStatus === "loading" ? "生成中" : "生成 9 张"}
+              </button>
+            </div>
+            {workplacePackItems.length > 0 && (
+              <div className="workplace-pack-grid">
+                {workplacePackItems.map((item) => (
+                  <img key={item.comboKey || item.id} src={item.thumbnail || item.imageUrl} alt={item.caption || "职场包"} loading="lazy" />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+        {authMessage && <small className="auth-note">{authMessage}</small>}
+        {!loggedIn && (
+          <small className="auth-note">游客可用自己的照片生成 1 次；登录后可保存形象并继续生成职场包。</small>
+        )}
+        {loggedIn && !avatarReady && (
+          <small className="auth-note">已登录。现在传一张正脸或半身照，AI 会做成拟人 3D 窗边替身，不走漫画风。</small>
+        )}
+        {profileSyncStatus !== "idle" && (
+          <small className={cn("profile-sync-note", profileSyncStatus === "error" && "profile-sync-note-error")}>
+            {profileSyncStatus === "saving" ? "后台正在收录你的形象" : profileSyncStatus === "done" ? "后台已收录，别后悔" : "后台刚才手滑了"}
+          </small>
         )}
       </section>
 

@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>窗边 Meme 设计稿</title>
+    <style>
+      :root {
+        color: #101827;
+        background: #f6fbff;
+        font-family:
+          Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Arial,
+          sans-serif;
+        --ink: #101827;
+        --muted: #66758a;
+        --line: rgba(16, 24, 39, 0.13);
+        --cyan: #23d8f2;
+        --blue: #2563eb;
+        --lime: #b8ff5c;
+        --coral: #ff6f8e;
+        --paper: rgba(255, 255, 255, 0.78);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        background:
+          linear-gradient(118deg, transparent 0 51%, rgba(35, 216, 242, 0.18) 51% 57%, transparent 57% 100%),
+          linear-gradient(180deg, #fbfdff 0%, #eafcff 54%, #f7f7fb 100%);
+        overflow-x: hidden;
+      }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        content: "";
+        background-image:
+          linear-gradient(rgba(16, 24, 39, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(16, 24, 39, 0.045) 1px, transparent 1px);
+        background-size: 30px 30px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent 86%);
+      }
+
+      button,
+      textarea,
+      input {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .draft-shell {
+        position: relative;
+        z-index: 1;
+        width: min(1240px, calc(100vw - 28px));
+        margin: 0 auto;
+        padding: 18px 0 34px;
+      }
+
+      .topbar,
+      .studio,
+      .gallery-strip,
+      .mobile-board,
+      .design-tokens {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        box-shadow: 0 24px 70px rgba(16, 24, 39, 0.12);
+        backdrop-filter: blur(18px);
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: end;
+        padding: 18px;
+      }
+
+      .brand-kicker {
+        display: inline-flex;
+        width: fit-content;
+        min-height: 30px;
+        align-items: center;
+        border: 1px solid rgba(35, 216, 242, 0.42);
+        border-radius: 999px;
+        background: #101827;
+        color: #b8ff5c;
+        padding: 0 11px;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        margin-top: 9px;
+        color: var(--ink);
+        font-size: clamp(46px, 7vw, 88px);
+        font-weight: 1000;
+        letter-spacing: 0;
+        line-height: 0.92;
+      }
+
+      .topbar-copy {
+        max-width: 560px;
+        margin-top: 12px;
+        color: #475569;
+        font-size: 16px;
+        font-weight: 850;
+        line-height: 1.55;
+      }
+
+      .capsules {
+        display: flex;
+        max-width: 520px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .capsules span,
+      .chip,
+      .role-pill,
+      .mini-button {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #1f2937;
+        padding: 0 12px;
+        font-size: 13px;
+        font-weight: 1000;
+      }
+
+      .capsules span:nth-child(1) {
+        border-color: rgba(35, 216, 242, 0.5);
+        background: #ecfeff;
+      }
+
+      .capsules span:nth-child(2) {
+        border-color: rgba(184, 255, 92, 0.7);
+        background: #f7fee7;
+      }
+
+      .capsules span:nth-child(3) {
+        border-color: rgba(255, 111, 142, 0.42);
+        background: #fff1f5;
+      }
+
+      .studio {
+        display: grid;
+        grid-template-columns: minmax(300px, 0.92fr) minmax(340px, 1fr) minmax(260px, 0.76fr);
+        gap: 14px;
+        margin-top: 14px;
+        padding: 14px;
+      }
+
+      .panel {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 14px;
+      }
+
+      .panel-title {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .panel-title span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .panel-title strong {
+        display: block;
+        margin-top: 3px;
+        color: var(--ink);
+        font-size: 24px;
+        font-weight: 1000;
+        line-height: 1.08;
+      }
+
+      .counter {
+        display: inline-grid;
+        min-width: 52px;
+        height: 34px;
+        place-items: center;
+        border-radius: 999px;
+        background: #101827;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 1000;
+      }
+
+      .prompt-box {
+        display: grid;
+        gap: 10px;
+      }
+
+      .prompt-input {
+        min-height: 132px;
+        width: 100%;
+        resize: none;
+        border: 2px solid rgba(16, 24, 39, 0.1);
+        border-radius: 8px;
+        outline: none;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(236, 254, 255, 0.8)),
+          #ffffff;
+        color: var(--ink);
+        padding: 16px;
+        font-size: 28px;
+        font-weight: 1000;
+        line-height: 1.15;
+        box-shadow: inset 0 -14px 34px rgba(35, 216, 242, 0.1);
+      }
+
+      .quick-row,
+      .role-grid,
+      .output-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip-primary {
+        border-color: rgba(16, 24, 39, 0.18);
+        background:
+          linear-gradient(135deg, #101827 0%, #2563eb 52%, #23d8f2 100%),
+          #101827;
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+      }
+
+      .role-grid {
+        margin-top: 13px;
+      }
+
+      .role-pill {
+        min-height: 42px;
+        gap: 8px;
+        padding: 0 11px 0 7px;
+      }
+
+      .role-pill b {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 8px;
+        background: #e0f2fe;
+        color: #075985;
+        font-size: 12px;
+      }
+
+      .role-active {
+        border-color: rgba(37, 99, 235, 0.55);
+        background: linear-gradient(135deg, rgba(35, 216, 242, 0.22), rgba(184, 255, 92, 0.26));
+      }
+
+      .role-active b {
+        background: #101827;
+        color: #b8ff5c;
+      }
+
+      .mood-card {
+        display: grid;
+        gap: 8px;
+        margin-top: 13px;
+        border: 1px dashed rgba(37, 99, 235, 0.34);
+        border-radius: 8px;
+        background:
+          linear-gradient(120deg, rgba(37, 99, 235, 0.08), rgba(35, 216, 242, 0.08), rgba(184, 255, 92, 0.14)),
+          rgba(255, 255, 255, 0.64);
+        padding: 12px;
+      }
+
+      .mood-card small {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .mood-card strong {
+        color: #be123c;
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .generate-button {
+        display: flex;
+        min-height: 58px;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 13px;
+        border: 1px solid rgba(16, 24, 39, 0.1);
+        border-radius: 8px;
+        background: linear-gradient(135deg, #b8ff5c, #67e8f9 58%, #93c5fd);
+        color: #07111d;
+        font-size: 17px;
+        font-weight: 1000;
+        box-shadow: 0 18px 44px rgba(35, 216, 242, 0.24);
+      }
+
+      .preview-panel {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        background:
+          linear-gradient(150deg, rgba(16, 24, 39, 0.98), rgba(16, 24, 39, 0.9) 54%, rgba(37, 99, 235, 0.9)),
+          #101827;
+      }
+
+      .preview-head {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .preview-head strong {
+        color: #fff;
+        font-size: 21px;
+        font-weight: 1000;
+      }
+
+      .preview-head span {
+        display: block;
+        margin-top: 5px;
+        color: #a7f3d0;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .mode-switch {
+        display: inline-flex;
+        overflow: hidden;
+        border: 1px solid rgba(125, 211, 252, 0.28);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .mode-switch button {
+        min-height: 38px;
+        min-width: 58px;
+        border: 0;
+        background: transparent;
+        color: #bfdbfe;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .mode-switch .active-mode {
+        background: #ecfeff;
+        color: #075985;
+      }
+
+      .preview-stage {
+        position: relative;
+        display: grid;
+        width: min(100%, 430px);
+        aspect-ratio: 1;
+        margin: 0 auto;
+        place-items: center;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background:
+          linear-gradient(90deg, #d4dedf 0 17%, #798695 17% 19%, #168ee1 19% 76%, #66717c 76% 80%, #0867bd 80% 100%),
+          #07111d;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+      }
+
+      .preview-stage img {
+        position: relative;
+        z-index: 1;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .preview-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .preview-actions button,
+      .preview-actions a {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #f8fafc;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 1000;
+      }
+
+      .side-panel {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+      }
+
+      .metric-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.76);
+        padding: 13px;
+      }
+
+      .metric-card span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .metric-card strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink);
+        font-size: 28px;
+        font-weight: 1000;
+        line-height: 1;
+      }
+
+      .metric-card p {
+        margin-top: 8px;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+
+      .route-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .route-item {
+        display: grid;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        gap: 9px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 9px;
+      }
+
+      .route-index {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: 8px;
+        background: #101827;
+        color: #b8ff5c;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .route-item strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 1000;
+      }
+
+      .route-item small {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .route-tag {
+        color: #075985;
+        font-size: 12px;
+        font-weight: 1000;
+      }
+
+      .gallery-strip {
+        margin-top: 14px;
+        padding: 15px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .section-head h2 {
+        color: var(--ink);
+        font-size: 28px;
+        font-weight: 1000;
+        line-height: 1;
+      }
+
+      .section-head p {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .meme-card {
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.84);
+      }
+
+      .meme-card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        background: #07111d;
+      }
+
+      .meme-card div {
+        display: grid;
+        gap: 4px;
+        padding: 8px;
+      }
+
+      .meme-card strong {
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 1000;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .meme-card span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .mobile-board {
+        display: grid;
+        grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+        gap: 18px;
+        margin-top: 14px;
+        padding: 18px;
+      }
+
+      .phone {
+        overflow: hidden;
+        border: 1px solid rgba(16, 24, 39, 0.16);
+        border-radius: 8px;
+        background: #f8fbff;
+        box-shadow: 0 26px 70px rgba(16, 24, 39, 0.18);
+      }
+
+      .phone-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding: 12px;
+      }
+
+      .phone-top strong {
+        font-size: 20px;
+        font-weight: 1000;
+      }
+
+      .phone-body {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .phone-input {
+        border: 2px solid rgba(35, 216, 242, 0.4);
+        border-radius: 8px;
+        background: #fff;
+        padding: 12px;
+        font-size: 24px;
+        font-weight: 1000;
+      }
+
+      .phone-result {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .phone-result img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+      }
+
+      .phone-result div {
+        display: grid;
+        gap: 5px;
+        padding: 10px;
+      }
+
+      .phone-result strong {
+        font-size: 18px;
+        font-weight: 1000;
+      }
+
+      .phone-result span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .mobile-notes {
+        display: grid;
+        align-content: center;
+        gap: 12px;
+      }
+
+      .mobile-notes h2 {
+        color: var(--ink);
+        font-size: clamp(32px, 4vw, 54px);
+        font-weight: 1000;
+        line-height: 0.98;
+      }
+
+      .mobile-notes p {
+        max-width: 520px;
+        color: #475569;
+        font-size: 16px;
+        font-weight: 850;
+        line-height: 1.58;
+      }
+
+      .token-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .design-tokens {
+        margin-top: 14px;
+        padding: 15px;
+      }
+
+      .token {
+        min-height: 88px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 12px;
+      }
+
+      .token b {
+        display: block;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 1000;
+      }
+
+      .token span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 960px) {
+        .topbar,
+        .studio,
+        .mobile-board {
+          grid-template-columns: 1fr;
+        }
+
+        .capsules {
+          justify-content: flex-start;
+        }
+
+        .gallery-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .token-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 520px) {
+        .draft-shell {
+          width: min(420px, calc(100vw - 14px));
+          padding-top: 8px;
+        }
+
+        .topbar,
+        .studio,
+        .gallery-strip,
+        .mobile-board,
+        .design-tokens {
+          padding: 12px;
+        }
+
+        h1 {
+          font-size: 44px;
+        }
+
+        .preview-actions,
+        .gallery-grid,
+        .token-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .prompt-input {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="draft-shell">
+      <section class="topbar" aria-label="设计稿头部">
+        <div>
+          <span class="brand-kicker">AI Sticker Studio · v2 draft</span>
+          <h1>窗边 Meme</h1>
+          <p class="topbar-copy">
+            新方向：保留蓝窗和低清 Meme 灵魂，把页面变成一个更轻、更快、更有 AI 现场感的表情包工作台。
+          </p>
+        </div>
+        <div class="capsules" aria-label="顶部胶囊">
+          <span>别问 问就是窗边</span>
+          <span>一键发疯不扣费</span>
+          <span>GIF 自动入库</span>
+          <span>103 个受害者</span>
+        </div>
+      </section>
+
+      <section class="studio" aria-label="生成工作台">
+        <section class="panel">
+          <div class="panel-title">
+            <div>
+              <span>一句话，AI 去站窗边</span>
+              <strong>发疯输入区</strong>
+            </div>
+            <b class="counter">12/42</b>
+          </div>
+          <div class="prompt-box">
+            <textarea class="prompt-input" readonly>啊？你再说一遍</textarea>
+            <div class="quick-row">
+              <button class="chip chip-primary">帮我发疯</button>
+              <button class="chip">客户又微调</button>
+              <button class="chip">钱没有</button>
+              <button class="chip">消息已读</button>
+              <button class="chip">人类效率真低</button>
+            </div>
+          </div>
+          <div class="role-grid" aria-label="角色选择">
+            <button class="role-pill role-active"><b>鼠</b>负鼠</button>
+            <button class="role-pill"><b>工</b>打工人</button>
+            <button class="role-pill"><b>板</b>老板</button>
+            <button class="role-pill"><b>AI</b>AI助手</button>
+          </div>
+          <div class="mood-card">
+            <small>AI 识别</small>
+            <strong>扭头疑惑</strong>
+            <small>身子不动，只把头拧回来；先出静图，再出 GIF。</small>
+          </div>
+          <button class="generate-button">生成 Meme + GIF</button>
+        </section>
+
+        <section class="panel preview-panel">
+          <div class="preview-head">
+            <div>
+              <strong>啊？你再说一遍</strong>
+              <span>负鼠 / 扭头疑惑 / 图库命中</span>
+            </div>
+            <div class="mode-switch">
+              <button class="active-mode">静图</button>
+              <button>GIF</button>
+            </div>
+          </div>
+          <div class="preview-stage">
+            <img src="gif-demo/opossum-question.png" alt="窗边 Meme 预览" />
+          </div>
+          <div class="preview-actions">
+            <button>复制到聊天</button>
+            <button>分享</button>
+            <a href="gif-demo/opossum-question.png">PNG</a>
+          </div>
+        </section>
+
+        <aside class="side-panel" aria-label="运行状态">
+          <div class="metric-card">
+            <span>今日 Meme 人数</span>
+            <strong>132</strong>
+            <p>数字像实时看板，但不抢主流程；作为年轻感和热闹感的轻社交证明。</p>
+          </div>
+          <div class="route-list">
+            <div class="route-item">
+              <b class="route-index">01</b>
+              <div>
+                <strong>输入一句</strong>
+                <small>文案和角色先聚焦</small>
+              </div>
+              <span class="route-tag">快</span>
+            </div>
+            <div class="route-item">
+              <b class="route-index">02</b>
+              <div>
+                <strong>AI 判动作</strong>
+                <small>疑问就只拧头</small>
+              </div>
+              <span class="route-tag">准</span>
+            </div>
+            <div class="route-item">
+              <b class="route-index">03</b>
+              <div>
+                <strong>静图 + GIF</strong>
+                <small>结果可切换</small>
+              </div>
+              <span class="route-tag">爽</span>
+            </div>
+          </div>
+          <div class="metric-card">
+            <span>输出策略</span>
+            <strong>低清快出</strong>
+            <p>视觉上强调“糊点才像表情包”，减少用户对高清生图工具的预期。</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="gallery-strip" aria-label="窗边库存">
+        <div class="section-head">
+          <div>
+            <h2>窗边库存</h2>
+            <p>图库更像可偷走的表情包货架，分类和复制按钮后续保留。</p>
+          </div>
+          <button class="mini-button">速速偷走</button>
+        </div>
+        <div class="gallery-grid">
+          <article class="meme-card">
+            <img src="recovered-gallery/09d7ff3bd1856d3bcdb7.png" alt="窗边库存样例" />
+            <div><strong>我请问呢</strong><span>@无名受害者 / 负鼠</span></div>
+          </article>
+          <article class="meme-card">
+            <img src="recovered-gallery/3418c8f1c77f476e1354.png" alt="窗边库存样例" />
+            <div><strong>钱没有</strong><span>@未注册用户 / 老板</span></div>
+          </article>
+          <article class="meme-card">
+            <img src="gif-demo/opossum-hello.png" alt="窗边库存样例" />
+            <div><strong>大爷，来玩啊</strong><span>@GIF / 社交伸手</span></div>
+          </article>
+          <article class="meme-card">
+            <img src="workplace-pack-sample/04.png" alt="职场包样例" />
+            <div><strong>客户说微调</strong><span>@职场包 / 认命</span></div>
+          </article>
+          <article class="meme-card">
+            <img src="recovered-gallery/dcf23272650b5a659e5e.png" alt="窗边库存样例" />
+            <div><strong>消息没回</strong><span>@已读沉默</span></div>
+          </article>
+          <article class="meme-card">
+            <img src="gif-demo/opossum-work.png" alt="窗边库存样例" />
+            <div><strong>别搞</strong><span>@GIF / 工位审判</span></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="mobile-board" aria-label="移动端设计稿">
+        <div class="phone">
+          <div class="phone-top">
+            <strong>窗边 Meme</strong>
+            <span class="brand-kicker">LIVE 132</span>
+          </div>
+          <div class="phone-body">
+            <div class="phone-input">客户说就微调一下</div>
+            <div class="quick-row">
+              <button class="chip chip-primary">帮我发疯</button>
+              <button class="chip">换一批</button>
+            </div>
+            <button class="generate-button">生成 Meme + GIF</button>
+            <article class="phone-result">
+              <img src="workplace-pack-sample/02.png" alt="移动端预览" />
+              <div>
+                <strong>客户说就微调一下</strong>
+                <span>长按当前 PNG/GIF 保存或转发</span>
+              </div>
+            </article>
+          </div>
+        </div>
+        <div class="mobile-notes">
+          <h2>移动端先像聊天工具，再像生成器。</h2>
+          <p>
+            首屏只保留输入、懒人按钮、生成按钮和结果。上传、登录、九宫格、许愿墙放到下方，减少第一次访问的压迫感。
+          </p>
+          <div class="output-row">
+            <span class="chip">单列主流程</span>
+            <span class="chip">大按钮</span>
+            <span class="chip">长按保存</span>
+            <span class="chip">结果先出现</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="design-tokens" aria-label="设计令牌">
+        <div class="section-head">
+          <div>
+            <h2>风格规则</h2>
+            <p>给正式改版用的视觉约束，防止越做越像普通工具站。</p>
+          </div>
+        </div>
+        <div class="token-grid">
+          <div class="token"><b>蓝窗是主角</b><span>输出图保持深夜蓝窗，不用大面积暗黑背景压住内容。</span></div>
+          <div class="token"><b>低清即质感</b><span>文案承认低清，产品预期从高清生图转成表情包模板。</span></div>
+          <div class="token"><b>AI 感来自流程</b><span>用识别票据、动作判断、状态条表达 AI，而不是堆科技渐变。</span></div>
+          <div class="token"><b>年轻感来自语气</b><span>按钮和空状态保留抽象幽默，但主操作必须清楚。</span></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
