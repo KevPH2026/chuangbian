@@ -73,6 +73,7 @@ const lazyMemePacks = [
 ];
 
 const exampleCount = 6;
+const memeImageSize = "512x512";
 const localGalleryKey = "chuangbian-local-gallery";
 const localGalleryLimit = 18;
 const authTokenKey = "chuangbian-auth-token";
@@ -334,7 +335,7 @@ function App() {
           userName: loggedIn ? displayName : "",
           userEmail: loggedIn ? authEmail : "",
           avatarImage: nextIsAvatarRole ? avatarImage : "",
-          size: "1024x1024",
+          size: memeImageSize,
           quality: "low"
         })
       });
@@ -582,7 +583,7 @@ function App() {
           captions: workplacePackCaptions,
           referralCode: quota?.referralCode || referralCode,
           referredBy,
-          size: "1024x1024",
+          size: memeImageSize,
           quality: "low"
         })
       });
@@ -886,7 +887,7 @@ function App() {
           referralCode: quota?.referralCode || referralCode,
           referredBy,
           role,
-          size: "1024x1024",
+          size: memeImageSize,
           text: nextText
         })
       });
@@ -1888,11 +1889,11 @@ function AdminApp() {
                   />
                 </label>
                 <label>
-                  <span>尺寸</span>
+                  <span>尺寸（1:1）</span>
                   <select value={modelDraft.size} onChange={(event) => setModelDraft((current) => ({ ...current, size: event.target.value }))}>
-                    <option value="256x256">256x256</option>
-                    <option value="512x512">512x512</option>
-                    <option value="1024x1024">1024x1024</option>
+                    <option value="256x256">256x256 低清</option>
+                    <option value="512x512">512x512 表情包</option>
+                    <option value="1024x1024">1024x1024 高清方图</option>
                   </select>
                 </label>
                 <label>
@@ -2224,7 +2225,7 @@ function createModelDraft(config = {}) {
     model: config.model || "openai/gpt-5.4-image-2",
     presetId: config.presetId || "tokenrouter-gpt-image-2",
     quality: config.quality || "low",
-    size: config.size || "1024x1024"
+    size: config.size || memeImageSize
   };
 }
 
