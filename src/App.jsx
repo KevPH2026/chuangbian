@@ -1077,62 +1077,21 @@ function App() {
 
   return (
     <main className="app-shell">
-      <section className="hero-strip">
+      <section className="hero-strip hero-agent">
         <div>
-          <p className="eyebrow">AI Sticker Lab</p>
+          <p className="eyebrow">AI Meme Agent</p>
           <h1>窗边 Meme</h1>
         </div>
         <div className="ticker-rail" aria-label="状态">
-          <span>别问 问就是窗边</span>
-          <span>糊点才像表情包</span>
-          <span>速速偷走</span>
+          <span>别解释，窗边会懂</span>
+          <span>糊点才像真的</span>
+          <span>复制进微信</span>
           <span>{gallery.length} 个受害者</span>
         </div>
       </section>
 
       <section className="studio-shell" aria-label="窗边生成工作台">
-        <section className="creator">
-        <div className="panel-title">
-          <div>
-            <span>说一句，AI 去站窗边</span>
-            <strong>{selectedRole.name}</strong>
-          </div>
-          <small>{text.length}/42</small>
-        </div>
-
-        <div className="prompt-zone">
-          <label className="input-label" htmlFor="window-text">输入一句</label>
-          <textarea
-            id="window-text"
-            value={text}
-            onChange={(event) => setText(event.target.value.slice(0, 42))}
-            maxLength={42}
-            className="text-input"
-            placeholder="比如：客户说就微调一下"
-          />
-          <div className="example-row">
-            <button type="button" className="example-chip lazy-meme-chip" onClick={remixLazyMeme}>
-              <Sparkles size={13} />
-              帮我发疯
-            </button>
-            {visibleExamples.map((example) => (
-              <button key={example} type="button" className="example-chip" onClick={() => useExample(example)}>
-                {example}
-              </button>
-            ))}
-            <button type="button" className="example-chip example-chip-refresh" onClick={rerollExamples}>
-              <RefreshCw size={13} />
-              换一批疯话
-            </button>
-          </div>
-          <div className={cn("mood-ticket", `mood-${currentMood.id}`)}>
-            <span>AI 识别</span>
-            <strong>{currentMood.name}</strong>
-            <small>{currentMood.detail}</small>
-          </div>
-        </div>
-
-        <section className="role-zone" aria-label="角色">
+        <section className="role-zone role-dock" aria-label="角色">
           {roles.map((item) => (
             <button
               key={item.id}
@@ -1147,10 +1106,51 @@ function App() {
           ))}
         </section>
 
+        <section className="creator command-console">
+        <div className="panel-title">
+          <div>
+            <span>一句话指令</span>
+            <strong>Agent 派 {selectedRole.name} 去窗边</strong>
+          </div>
+          <small>{text.length}/42</small>
+        </div>
+
+        <div className="prompt-zone">
+          <label className="input-label" htmlFor="window-text">MEME PROMPT</label>
+          <textarea
+            id="window-text"
+            value={text}
+            onChange={(event) => setText(event.target.value.slice(0, 42))}
+            maxLength={42}
+            className="text-input"
+            placeholder="比如：啊？客户又说微调一下"
+          />
+          <div className="example-row">
+            <button type="button" className="example-chip lazy-meme-chip" onClick={remixLazyMeme}>
+              <Sparkles size={13} />
+              随机发疯
+            </button>
+            {visibleExamples.map((example) => (
+              <button key={example} type="button" className="example-chip" onClick={() => useExample(example)}>
+                {example}
+              </button>
+            ))}
+            <button type="button" className="example-chip example-chip-refresh" onClick={rerollExamples}>
+              <RefreshCw size={13} />
+              换一批疯话
+            </button>
+          </div>
+          <div className={cn("mood-ticket", `mood-${currentMood.id}`)}>
+            <span>Agent 判定</span>
+            <strong>{currentMood.name}</strong>
+            <small>{currentMood.detail}</small>
+          </div>
+        </div>
+
         <div className="action-row">
           <button type="button" className="primary-button" onClick={generateImage} disabled={!canGenerate}>
             {status === "loading" ? <Loader2 className="animate-spin" size={19} /> : <Sparkles size={19} />}
-            {status === "loading" ? "静图 + GIF 一起站" : quotaBlocked ? "额度见底了" : guestAvatarBlocked ? "游客照片用完" : "生成 Meme + GIF"}
+            {status === "loading" ? "静图 + GIF 一起站" : quotaBlocked ? "额度见底了" : guestAvatarBlocked ? "游客照片用完" : "送去窗边 + GIF"}
           </button>
           {imageUrl && (
             <button type="button" className="secondary-button" onClick={generateImage} disabled={status === "loading" || gifStatus === "encoding"}>
@@ -1176,16 +1176,16 @@ function App() {
         {error && <div className="error-box">{error}</div>}
       </section>
 
-      <section className="result" ref={resultRef}>
+      <section className="result agent-preview" ref={resultRef}>
         <div className="result-head">
           <div>
-            <p className="result-title">{imageUrl ? meta?.caption || text : "蓝窗预览"}</p>
+            <p className="result-title">{imageUrl ? meta?.caption || text : "生成画布"}</p>
             <p className="result-meta">
               {imageUrl
                 ? `${meta?.roleName || selectedRole.name} / ${meta?.actionName || "窗边"} / ${
                     cacheHit ? "图库命中" : "新生成"
                   } / @${meta?.creatorName || displayName}`
-                : `${selectedRole.name} / 蓝窗 / 背手`}
+                : `${selectedRole.name} / 等待指令 / 蓝窗背手`}
             </p>
           </div>
           {imageUrl && (
@@ -1293,43 +1293,43 @@ function App() {
         )}
       </section>
 
-        <aside className="status-rail" aria-label="今日状态和权益">
+        <aside className="status-rail agent-rail" aria-label="今日状态和权益">
           <section className="live-board" aria-label="今日 Meme 人数">
             <div>
               <span className="live-dot">LIVE</span>
               <strong>今日 Meme 人数</strong>
-              <small>{metricsStatus === "error" ? "看板短暂离线，精神状态仍在线" : "5 分钟跳一次，看起来非常忙"}</small>
+              <small>{metricsStatus === "error" ? "看板短暂离线，情绪仍在线" : "5 分钟跳一次，看起来很忙"}</small>
             </div>
             <b>{memeMetrics ? memeMetrics.visibleUv : "78"}</b>
             <p>
-              今日访问 UV · {memeMetrics?.hits ? `围观 ${memeMetrics.hits} 次` : "正在蹲窗边"}
+              今日访问 UV · {memeMetrics?.hits ? `围观 ${memeMetrics.hits} 次` : "等人来窗边"}
             </p>
           </section>
 
           <section className="flow-card" aria-label="生成流程">
             <div className="flow-head">
-              <span>AI 代站流程</span>
-              <strong>三步把人送去窗边</strong>
+              <span>AGENT ROUTE</span>
+              <strong>读一句，决定怎么疯</strong>
             </div>
             <div className="flow-item">
               <b>01</b>
               <div>
-                <strong>输入一句</strong>
-                <span>别铺垫，越短越有病。</span>
+                <strong>读懂语气</strong>
+                <span>疑问、穷、班味、emo 自动分流。</span>
               </div>
             </div>
             <div className="flow-item">
               <b>02</b>
               <div>
-                <strong>AI 判动作</strong>
-                <span>疑问就拧头，认命就看窗。</span>
+                <strong>设计动作</strong>
+                <span>互动就回头，认命就看窗。</span>
               </div>
             </div>
             <div className="flow-item">
               <b>03</b>
               <div>
-                <strong>静图 + GIF</strong>
-                <span>糊点快点，方便偷走。</span>
+                <strong>出图入库</strong>
+                <span>静图和 GIF 都方便偷走。</span>
               </div>
             </div>
           </section>
