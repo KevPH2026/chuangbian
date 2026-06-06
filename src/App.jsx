@@ -1107,80 +1107,110 @@ function App() {
           ))}
         </section>
 
-        <section className="creator command-console">
-        <div className="panel-title">
-          <div>
-            <span>一句话指令</span>
-            <strong>Agent 派 {selectedRole.name} 去窗边</strong>
-          </div>
-          <small>{text.length}/42</small>
-        </div>
-
-        <div className="prompt-zone">
-          <label className="input-label" htmlFor="window-text">MEME PROMPT</label>
-          <textarea
-            id="window-text"
-            value={text}
-            onChange={(event) => setText(event.target.value.slice(0, 42))}
-            maxLength={42}
-            className="text-input"
-            placeholder="比如：啊？客户又说微调一下"
-          />
-          <div className="example-row">
-            <button type="button" className="example-chip lazy-meme-chip" onClick={remixLazyMeme}>
-              <Sparkles size={13} />
-              随机发疯
-            </button>
-            {visibleExamples.map((example) => (
-              <button key={example} type="button" className="example-chip" onClick={() => useExample(example)}>
-                {example}
-              </button>
-            ))}
-            <button type="button" className="example-chip example-chip-refresh" onClick={rerollExamples}>
-              <RefreshCw size={13} />
-              换一批疯话
-            </button>
-          </div>
-          <div className={cn("mood-ticket", `mood-${currentMood.id}`)}>
-            <span>Agent 判定</span>
-            <strong>{currentMood.name}</strong>
-            <small>{currentMood.detail}</small>
-          </div>
-        </div>
-
-        <div className="action-row">
-          <button type="button" className="primary-button" onClick={generateImage} disabled={!canGenerate}>
-            {status === "loading" ? <Loader2 className="animate-spin" size={19} /> : <Sparkles size={19} />}
-            {status === "loading" ? "静图 + GIF 一起站" : quotaBlocked ? "额度见底了" : guestAvatarBlocked ? "游客照片用完" : "送去窗边 + GIF"}
-          </button>
-          {imageUrl && (
-            <button type="button" className="secondary-button" onClick={generateImage} disabled={status === "loading" || gifStatus === "encoding"}>
-              <RefreshCw size={18} />
-              重新生成一套
-            </button>
-          )}
-        </div>
-        {(status === "loading" || gifStatus === "encoding") && (
-          <div className="generation-progress" role="status" aria-live="polite">
+        <section className="creator command-console chat-console">
+          <div className="chat-topbar">
             <div>
-              <span>正在同时开工</span>
-              <strong>先出静图，再把它动起来</strong>
+              <span>CHUANGBIAN AGENT</span>
+              <strong>把一句话聊成表情包</strong>
             </div>
-            <div className="generation-progress-steps">
-              <i className={cn("generation-step", status === "loading" && "generation-step-active")}>静图</i>
-              <i className={cn("generation-step", gifStatus === "encoding" && "generation-step-active")}>GIF</i>
-              <i className="generation-step">入库</i>
-            </div>
+            <small>{text.length}/42</small>
           </div>
-        )}
 
-        {error && <div className="error-box">{error}</div>}
+          <div className="chat-thread" aria-label="AI 对话生成">
+            <article className="chat-message chat-message-agent">
+              <span className="chat-avatar">AI</span>
+              <div className="chat-bubble">
+                <small>窗边 Agent</small>
+                <p>发一句话就行。我判断情绪、角色和动作，再把它送到蓝窗边。</p>
+              </div>
+            </article>
+            <article className="chat-message chat-message-user">
+              <div className="chat-bubble">
+                <small>你</small>
+                <p>{text.trim() || "还没发消息"}</p>
+              </div>
+              <span className="chat-avatar chat-avatar-user">你</span>
+            </article>
+            <article className="chat-message chat-message-agent chat-message-plan">
+              <span className="chat-avatar">AI</span>
+              <div className="chat-bubble">
+                <small>{status === "loading" ? "正在生成" : imageUrl ? "已出图" : "生成预判"}</small>
+                <strong>{status === "loading" ? "我正在把它送去窗边" : `派 ${selectedRole.name}，走「${currentMood.name}」`}</strong>
+                <div className="chat-plan-grid">
+                  <span>角色：{selectedRole.name}</span>
+                  <span>动作：{currentMood.name}</span>
+                  <span>气质：{currentMood.detail}</span>
+                  <span>{imageUrl ? (cacheHit ? "图库命中，可直接偷走" : "新图已入库") : "点击发送后生成静图 + GIF"}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div className="chat-composer">
+            <label className="input-label" htmlFor="window-text">跟 AI 说一句</label>
+            <textarea
+              id="window-text"
+              value={text}
+              onChange={(event) => setText(event.target.value.slice(0, 42))}
+              maxLength={42}
+              className="text-input chat-input"
+              placeholder="比如：啊？客户又说微调一下"
+            />
+            <div className="example-row">
+              <button type="button" className="example-chip lazy-meme-chip" onClick={remixLazyMeme}>
+                <Sparkles size={13} />
+                让 AI 起一句
+              </button>
+              {visibleExamples.map((example) => (
+                <button key={example} type="button" className="example-chip" onClick={() => useExample(example)}>
+                  {example}
+                </button>
+              ))}
+              <button type="button" className="example-chip example-chip-refresh" onClick={rerollExamples}>
+                <RefreshCw size={13} />
+                换一批
+              </button>
+            </div>
+            <div className="chat-send-row">
+              <div className={cn("mood-ticket", `mood-${currentMood.id}`)}>
+                <span>Agent 判定</span>
+                <strong>{currentMood.name}</strong>
+                <small>{currentMood.detail}</small>
+              </div>
+              <button type="button" className="primary-button chat-send-button" onClick={generateImage} disabled={!canGenerate}>
+                {status === "loading" ? <Loader2 className="animate-spin" size={19} /> : <Send size={19} />}
+                {status === "loading" ? "生成中" : quotaBlocked ? "额度见底" : guestAvatarBlocked ? "照片用完" : "发送生成"}
+              </button>
+            </div>
+            {imageUrl && (
+              <button type="button" className="secondary-button" onClick={generateImage} disabled={status === "loading" || gifStatus === "encoding"}>
+                <RefreshCw size={18} />
+                再聊一版
+              </button>
+            )}
+          </div>
+
+          {(status === "loading" || gifStatus === "encoding") && (
+            <div className="generation-progress" role="status" aria-live="polite">
+              <div>
+                <span>Agent 正在执行</span>
+                <strong>先出静图，再把它动起来</strong>
+              </div>
+              <div className="generation-progress-steps">
+                <i className={cn("generation-step", status === "loading" && "generation-step-active")}>静图</i>
+                <i className={cn("generation-step", gifStatus === "encoding" && "generation-step-active")}>GIF</i>
+                <i className="generation-step">入库</i>
+              </div>
+            </div>
+          )}
+
+          {error && <div className="error-box">{error}</div>}
       </section>
 
       <section className="result agent-preview" ref={resultRef}>
         <div className="result-head">
           <div>
-            <p className="result-title">{imageUrl ? meta?.caption || text : "生成画布"}</p>
+            <p className="result-title">{imageUrl ? meta?.caption || text : "AI 回复附件"}</p>
             <p className="result-meta">
               {imageUrl
                 ? `${meta?.roleName || selectedRole.name} / ${meta?.actionName || "窗边"} / ${
